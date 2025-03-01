@@ -2,3 +2,5 @@ pandas
 nltk
 scikit-learn
 Flask
+python-dotenv
+flask-sqlalchemy
