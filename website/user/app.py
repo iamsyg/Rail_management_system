@@ -1,12 +1,14 @@
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
-from models import db
+from models import db, jwt
 from auth import auth_bp
 
 app = Flask(__name__)
 app.config.from_prefixed_env()
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///users.db"
+
 db.init_app(app)
+jwt.init_app(app)
 
 with app.app_context():
     db.create_all()

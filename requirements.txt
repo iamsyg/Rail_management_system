@@ -4,3 +4,4 @@ scikit-learn
 Flask
 python-dotenv
 flask-sqlalchemy
+flask-jwt-extended

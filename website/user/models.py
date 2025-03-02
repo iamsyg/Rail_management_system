@@ -2,8 +2,10 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import Mapped, mapped_column
 from uuid import uuid4
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_jwt_extended import JWTManager
 
 db = SQLAlchemy()
+jwt = JWTManager()
 
 class User(db.Model):
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid4()))
