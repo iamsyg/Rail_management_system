@@ -23,5 +23,11 @@ def home():
         return redirect("/auth/login")  
     return render_template("index.html")  
 
+@app.route("/status")
+def status():
+    if "name" not in session: 
+        return redirect("/auth/login")  
+    return render_template("status.html")
+
 if __name__ == "__main__":
     app.run(debug=True)
