@@ -1,4 +1,4 @@
-from flask import Blueprint, request, redirect, render_template
+from flask import Blueprint, request, redirect, render_template, make_response
 from models import User
 from flask_jwt_extended import create_refresh_token, create_access_token 
 from flask import jsonify
@@ -43,7 +43,12 @@ def login_user():
         if user and user.check_password(password):
             access_token = create_access_token(identity=user.email)
             refresh_token = create_refresh_token(identity=user.email)
-            return jsonify({"message": "Login successful", "access_token": access_token, "refresh_token": refresh_token}), 200
+
+            response = make_response(redirect("/"))  
+            response.headers.add("Set-Cookie", f"access_token={access_token}; HttpOnly; Secure; SameSite=Lax")
+            response.headers.add("Set-Cookie", f"refresh_token={refresh_token}; HttpOnly; Secure; SameSite=Lax")
+
+            return response
 
         return jsonify({"error": "Invalid email or password"}), 401  
 
