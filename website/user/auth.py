@@ -54,5 +54,18 @@ def login_user():
 
         return jsonify({"error": "Invalid email or password"}), 401  
 
-    return render_template("login.html")  
+    return render_template("login.html") 
+
+
+@auth_bp.route("/logout", methods=["POST"])
+def logout_user():
+    response = make_response(redirect("/auth/login")) 
+    
+    # Clear cookies
+    response.headers.add("Set-Cookie", "access_token=; HttpOnly; Secure; SameSite=Lax; Max-Age=0")
+    response.headers.add("Set-Cookie", "refresh_token=; HttpOnly; Secure; SameSite=Lax; Max-Age=0")
+
+    session.clear()
+
+    return response 
 
