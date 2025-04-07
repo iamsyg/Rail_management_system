@@ -1,5 +1,5 @@
 from flask import Blueprint, request, redirect, render_template, make_response, session
-from models import User
+from .models import User
 from flask_jwt_extended import create_refresh_token, create_access_token 
 from flask import jsonify
 
