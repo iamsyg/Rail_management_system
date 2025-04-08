@@ -1,13 +1,15 @@
-from flask import Flask, render_template, session, redirect, jsonify
+from flask import Flask, render_template, session, redirect, jsonify, Blueprint
 from flask_sqlalchemy import SQLAlchemy
 from models import db, jwt
-from auth import auth_bp
+from .auth import auth_bp
 
 app = Flask(__name__)
 app.config.from_prefixed_env()
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///users.db"
 
 app.config["SECRET_KEY"] = "eternity"
+
+user_bp = Blueprint('user', __name__, url_prefix='/user')
 
 db.init_app(app)
 jwt.init_app(app)
