@@ -8,17 +8,15 @@ function page() {
   return (
     <div>
       <div>
-      <div>
       <Navbar />
 
       <div className="sidebar flex">
         <Sidebar />
 
         <div className="content m-4">
-          <h1>Account Settings</h1>
+          <h1>Complaint History</h1>
         </div>
       </div>
-    </div>
     </div>
     </div>
   )

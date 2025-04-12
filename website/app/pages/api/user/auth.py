@@ -4,7 +4,7 @@ from flask_jwt_extended import create_refresh_token, create_access_token
 from flask import jsonify
 from .models import RoleEnum
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from flask_jwt_extended import set_access_cookies, set_refresh_cookies, decode_token
+from flask_jwt_extended import set_access_cookies, set_refresh_cookies, decode_token, unset_jwt_cookies, get_jwt
 
 def generateAccessTokenAndRefreshToken(userEmail):
     try:
@@ -172,22 +172,29 @@ def signin_user():
 def logout_user():
 
     response = jsonify({"message": "Logged out successfully"})
-    response.headers.add("Set-Cookie", "access_token=; HttpOnly; Secure; SameSite=Lax; Max-Age=0")
-    response.headers.add("Set-Cookie", "refresh_token=; HttpOnly; Secure; SameSite=Lax; Max-Age=0")
+    # response.headers.add("Set-Cookie", "access_token=; HttpOnly; Secure; SameSite=Lax; Max-Age=0")
+    # response.headers.add("Set-Cookie", "refresh_token=; HttpOnly; Secure; SameSite=Lax; Max-Age=0")
+    unset_jwt_cookies(response)
     return response, 200
 
 @auth_bp.route("/profile", methods=["GET"])
 @jwt_required()
 def get_logged_in_user():
-    identity = get_jwt_identity()
-    print("[DEBUG] identity:", identity)
-    print("[DEBUG] identity from token:", identity)
-
-    if not identity or not isinstance(identity, dict):
-        return jsonify({"error": "Invalid token payload"}), 401
+    # Get the identity (user ID)
+    user_id = get_jwt_identity()
+    
+    # Get additional claims
+    claims = get_jwt()
     
     return jsonify({
-        "user": identity
+        "success": True,
+        "user": {
+            "id": user_id,
+            "name": claims.get("name"),
+            "email": claims.get("email"),
+            "phone_number": claims.get("phone_number"),
+            "role": claims.get("role")
+        }
     }), 200
 
 @auth_bp.route("/refresh", methods=["POST"])
@@ -208,4 +215,29 @@ def debug_cookies():
     print("Access Token Cookie:", request.cookies.get("access_token"))
     print("Refresh Token Cookie:", request.cookies.get("refresh_token"))
     return jsonify(success=True)
+
+
+@auth_bp.route("/verify-token", methods=["GET"])
+def verify_token():
+    try:
+        # Manually decode token from cookie
+        from flask_jwt_extended import decode_token
+        from flask import request
+        
+        token = request.cookies.get("access_token")
+        if not token:
+            return jsonify({"success": False, "message": "No token in cookies"}), 401
+            
+        # Try to decode it
+        decoded = decode_token(token)
+        return jsonify({
+            "success": True, 
+            "decoded": decoded,
+            "sub": decoded.get("sub")
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 401
 

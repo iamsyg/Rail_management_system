@@ -37,22 +37,25 @@ class User(db.Model):
         return check_password_hash(self.password, password)
     
     def generate_access_token(self):
-        return create_access_token(identity={
-                "id": self.id,
+        return create_access_token(
+            identity=self.id,  # Primary identity is a string
+            additional_claims={  # Additional data as claims
                 "name": self.name,
                 "email": self.email,
-                "phoneNumber": self.phoneNumber,
+                "phone_number": self.phoneNumber,
                 "role": self.role.value
         })
     
     def generate_refresh_token(self):
-        return create_refresh_token(identity={
-            "id": self.id,
-            "name": self.name,
-            "email": self.email,
-            "phoneNumber": self.phoneNumber,
-            "role": self.role.value
-        })
+        return create_refresh_token(
+            identity=self.id,  # Primary identity is a string
+            additional_claims={  # Additional data as claims
+                "name": self.name,
+                "email": self.email,
+                "phone_number": self.phoneNumber,
+                "role": self.role.value
+            }
+        )
 
     @classmethod
     def get_user_by_email(cls, email):
