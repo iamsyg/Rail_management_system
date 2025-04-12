@@ -19,7 +19,11 @@ app.config["JWT_SECRET_KEY"] = os.environ.get("FLASK_JWT_SECRET_KEY")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=30)
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=7)
 
-app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+# app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+app.config["JWT_TOKEN_LOCATION"] = ["headers"]
+app.config["JWT_HEADER_NAME"] = "Authorization"
+app.config["JWT_HEADER_TYPE"] = "Bearer"
+
 app.config["JWT_COOKIE_SECURE"] = False  # True if using HTTPS only
 
 app.config["JWT_ACCESS_COOKIE_NAME"] = "access_token"
@@ -35,7 +39,7 @@ CORS(
         origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(","),
         supports_credentials=True,
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["Content-Type", "Authorization"]
+        allow_headers=["Content-Type", "Authorization", "X-Requested-With"]
     )
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')

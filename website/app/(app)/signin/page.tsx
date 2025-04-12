@@ -78,7 +78,7 @@ export default function Signup() {
 
       console.log(response)
       
-      router.push('/home');
+      router.push('/dashboard');
     } catch (error: any) {
       setErrors({ submit: error.message || 'An unexpected error occurred' });
     } finally {

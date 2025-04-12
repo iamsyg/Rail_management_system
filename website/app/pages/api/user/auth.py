@@ -22,10 +22,9 @@ def generateAccessTokenAndRefreshToken(userEmail):
         user.refresh_token = refreshToken
         user.save()
 
-        return {
-            "accessToken": accessToken,
-            "refreshToken": refreshToken
-        }, None, None
+        token = { "access_token": accessToken, "refresh_token": refreshToken } 
+
+        return token, None
 
     except Exception as e:
         return jsonify({
@@ -125,13 +124,16 @@ def signin_user():
 
         if user.check_password(password):
 
-            tokens, error_response, status_code = generateAccessTokenAndRefreshToken(user.email)
+            tokens, error_response = generateAccessTokenAndRefreshToken(user.email)
 
             if error_response:
-                return error_response, status_code
+                return error_response
             
-            access_token = tokens["accessToken"]
-            refresh_token = tokens["refreshToken"]
+            access_token = tokens["access_token"]
+            refresh_token = tokens["refresh_token"]
+
+            print("[DEBUG] access_token:", access_token)
+            print("[DEBUG] refresh_token:", refresh_token)
 
             response = jsonify({
                 "message": "Login successful",
@@ -147,8 +149,11 @@ def signin_user():
                 "refreshToken": refresh_token
             })
 
-            set_access_cookies(response, access_token)
-            set_refresh_cookies(response, refresh_token)
+            response.set_cookie("access_token", access_token, httponly=True, secure=False, samesite="Lax")
+            response.set_cookie("refresh_token", refresh_token, httponly=True, secure=False, samesite="Lax")
+
+            # set_access_cookies(response, access_token)
+            # set_refresh_cookies(response, refresh_token)
 
             # session["name"] = user.name
             # session.permanent = True
@@ -171,36 +176,21 @@ def logout_user():
     response.headers.add("Set-Cookie", "refresh_token=; HttpOnly; Secure; SameSite=Lax; Max-Age=0")
     return response, 200
 
-# @auth_bp.route("/profile", methods=["GET"])
-# # @jwt_required()
-# def get_logged_in_user():
-#     identity = request.cookies.get("access_token")
-#     print("[DEBUG] identity:", identity)
-#     print("[DEBUG] identity from token:", identity)
-
-#     if not identity or not isinstance(identity, dict):
-#         return jsonify({"error": "Invalid token payload"}), 401
-    
-#     return jsonify({
-#         "user": identity
-#     }), 200
-
 @auth_bp.route("/profile", methods=["GET"])
+@jwt_required()
 def get_logged_in_user():
-    token = request.cookies.get("access_token")
-    if not token:
-        return jsonify({"error": "No token found"}), 401
+    identity = get_jwt_identity()
+    print("[DEBUG] identity:", identity)
+    print("[DEBUG] identity from token:", identity)
 
-    try:
-        decoded = decode_token(token)
-        identity = decoded.get("sub")
-        print("[DEBUG] identity from token:", identity)
-        return jsonify({"user": identity}), 200
-    except Exception as e:
-        print("Token decode failed:", str(e))
-        return jsonify({"error": "Invalid token"}), 401
+    if not identity or not isinstance(identity, dict):
+        return jsonify({"error": "Invalid token payload"}), 401
+    
+    return jsonify({
+        "user": identity
+    }), 200
 
-@auth_bp.route("/refresh", methods=["POST", "GET"])
+@auth_bp.route("/refresh", methods=["POST"])
 @jwt_required(refresh=True)
 def refresh():
     if request.method != "POST":
