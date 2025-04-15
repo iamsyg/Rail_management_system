@@ -42,14 +42,13 @@ CORS(
         allow_headers=["Content-Type", "Authorization", "X-Requested-With"]
     )
 
-user_bp = Blueprint('user', __name__, url_prefix='/user')
-
 db.init_app(app)
 jwt.init_app(app)
 
 with app.app_context():
     db.create_all()
 
+user_bp = Blueprint('user', __name__, url_prefix='/user')
 app.register_blueprint(auth_bp, url_prefix="/auth")
 
 @app.route("/status", methods=["GET"])

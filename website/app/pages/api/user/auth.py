@@ -6,6 +6,7 @@ from .models import RoleEnum
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_jwt_extended import set_access_cookies, set_refresh_cookies, decode_token, unset_jwt_cookies, get_jwt
 
+auth_bp = Blueprint("auth", __name__)
 def generateAccessTokenAndRefreshToken(userEmail):
     try:
         user = User.get_user_by_email(userEmail)
@@ -31,9 +32,6 @@ def generateAccessTokenAndRefreshToken(userEmail):
             "success": False,
             "message": f"Error generating tokens: {str(e)}"
         })
-
-
-auth_bp = Blueprint("auth", __name__)
 
 @auth_bp.route("/signup", methods=["POST"])
 def signup_user():
@@ -172,8 +170,6 @@ def signin_user():
 def logout_user():
 
     response = jsonify({"message": "Logged out successfully"})
-    # response.headers.add("Set-Cookie", "access_token=; HttpOnly; Secure; SameSite=Lax; Max-Age=0")
-    # response.headers.add("Set-Cookie", "refresh_token=; HttpOnly; Secure; SameSite=Lax; Max-Age=0")
     unset_jwt_cookies(response)
     return response, 200
 

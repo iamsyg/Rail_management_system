@@ -32,7 +32,7 @@ class Complaint(db.Model):
 
     complaint: Mapped[str] = mapped_column(nullable=False)
 
-    classfication: Mapped[str] = mapped_column(nullable=True)
+    classification: Mapped[str] = mapped_column(nullable=True)
 
     sentiment: Mapped[str] = mapped_column(nullable=True)
 
@@ -44,11 +44,6 @@ class Complaint(db.Model):
 
     def __repr__(self) -> str:
         return f"Complaint(id={self.id}, PNR={self.pnrNumber}, complaint={self.complaint})"
-    
-
-    @classmethod
-    def get_user_by_email(cls, email):
-        return cls.query.filter_by(email=email).first()
 
     def save(self):
         try:
