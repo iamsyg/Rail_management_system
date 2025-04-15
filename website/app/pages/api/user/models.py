@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid import uuid4
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager
@@ -26,6 +26,8 @@ class User(db.Model):
     password: Mapped[str] = mapped_column(nullable=False)
     role: Mapped[RoleEnum] = mapped_column(Enum(RoleEnum), nullable=False, default=RoleEnum.user)
     refresh_token = mapped_column(db.String, nullable=True)
+
+    complaints = relationship('Complaint', back_populates='user')
 
     def __repr__(self) -> str:
         return f"User(id={self.id}, name={self.name}, email={self.email})"
