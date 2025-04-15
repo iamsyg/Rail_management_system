@@ -51,6 +51,9 @@ with app.app_context():
 user_bp = Blueprint('user', __name__, url_prefix='/user')
 app.register_blueprint(auth_bp, url_prefix="/auth")
 
+complaint_bp = Blueprint('complaint', __name__, url_prefix='/complaint')
+app.register_blueprint(complaint_bp, url_prefix="/complaint")
+
 @app.route("/status", methods=["GET"])
 def status():  
     return jsonify({"message": "Success"}), 201

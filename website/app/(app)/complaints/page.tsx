@@ -6,32 +6,32 @@ import Sidebar from "@/app/components/Sidebar";
 
 interface ComplaintFormData {
   trainNumber: string;
-  pnr: string;
-  coach: string;
+  pnrNumber: string;
+  coachNumber: string;
   seatNumber: string;
-  source: string;
-  destination: string;
+  sourceStation: string;
+  destinationStation: string;
   complaint: string;
 }
 
 interface FormErrors {
   trainNumber?: string;
-  pnr?: string;
-  coach?: string;
+  pnrNumber?: string;
+  coachNumber?: string;
   seatNumber?: string;
-  source?: string;
-  destination?: string;
+  sourceStation?: string;
+  destinationStation?: string;
   complaint?: string;
 }
 
 export default function ComplaintPage() {
   const [formData, setFormData] = useState<ComplaintFormData>({
     trainNumber: '',
-    pnr: '',
-    coach: '',
+    pnrNumber: '',
+    coachNumber: '',
     seatNumber: '',
-    source: '',
-    destination: '',
+    sourceStation: '',
+    destinationStation: '',
     complaint: ''
   });
 
@@ -51,14 +51,13 @@ export default function ComplaintPage() {
     const newErrors: FormErrors = {};
     
     if (!formData.trainNumber.trim()) newErrors.trainNumber = 'Train number is required';
-    if (!formData.pnr.trim()) newErrors.pnr = 'PNR is required';
-    else if (!/^[A-Za-z0-9]{10}$/.test(formData.pnr)) newErrors.pnr = 'PNR must be 10 alphanumeric characters';
-    if (!formData.coach.trim()) newErrors.coach = 'Coach number is required';
+    if (!formData.pnrNumber.trim()) newErrors.pnrNumber = 'PNR is required';
+    else if (formData.pnrNumber.length !== 10) newErrors.pnrNumber = 'PNR must be 10 characters';
+    if (!formData.coachNumber.trim()) newErrors.coachNumber = 'CoachNumber number is required';
     if (!formData.seatNumber.trim()) newErrors.seatNumber = 'Seat number is required';
-    if (!formData.source.trim()) newErrors.source = 'Source station is required';
-    if (!formData.destination.trim()) newErrors.destination = 'Destination station is required';
+    if (!formData.sourceStation.trim()) newErrors.sourceStation = 'SourceStation station is required';
+    if (!formData.destinationStation.trim()) newErrors.destinationStation = 'DestinationStation station is required';
     if (!formData.complaint.trim()) newErrors.complaint = 'Complaint description is required';
-    else if (formData.complaint.length < 20) newErrors.complaint = 'Complaint must be at least 20 characters';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -78,11 +77,11 @@ export default function ComplaintPage() {
         setSubmitSuccess(true);
         setFormData({
           trainNumber: '',
-          pnr: '',
-          coach: '',
+          pnrNumber: '',
+          coachNumber: '',
           seatNumber: '',
-          source: '',
-          destination: '',
+          sourceStation: '',
+          destinationStation: '',
           complaint: ''
         });
       } catch (error) {
@@ -139,41 +138,44 @@ export default function ComplaintPage() {
                           onChange={handleChange}
                           className={`w-full px-3 py-2 border rounded-md ${errors.trainNumber ? 'border-red-500' : 'border-gray-300'}`}
                           placeholder="Enter train number"
+                          required
                         />
                         {errors.trainNumber && <p className="mt-1 text-sm text-red-600">{errors.trainNumber}</p>}
                       </div>
 
                       <div>
-                        <label htmlFor="pnr" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="pnrNumber" className="block text-sm font-medium text-gray-700 mb-1">
                           PNR Number *
                         </label>
                         <input
                           type="text"
-                          id="pnr"
-                          name="pnr"
-                          value={formData.pnr}
+                          id="pnrNumber"
+                          name="pnrNumber"
+                          value={formData.pnrNumber}
                           onChange={handleChange}
-                          className={`w-full px-3 py-2 border rounded-md ${errors.pnr ? 'border-red-500' : 'border-gray-300'}`}
+                          className={`w-full px-3 py-2 border rounded-md ${errors.pnrNumber ? 'border-red-500' : 'border-gray-300'}`}
                           placeholder="Enter 10-digit PNR"
                           maxLength={10}
+                          required
                         />
-                        {errors.pnr && <p className="mt-1 text-sm text-red-600">{errors.pnr}</p>}
+                        {errors.pnrNumber && <p className="mt-1 text-sm text-red-600">{errors.pnrNumber}</p>}
                       </div>
 
                       <div>
-                        <label htmlFor="coach" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="coachNumber" className="block text-sm font-medium text-gray-700 mb-1">
                           Coach Number *
                         </label>
                         <input
                           type="text"
-                          id="coach"
-                          name="coach"
-                          value={formData.coach}
+                          id="coachNumber"
+                          name="coachNumber"
+                          value={formData.coachNumber}
                           onChange={handleChange}
-                          className={`w-full px-3 py-2 border rounded-md ${errors.coach ? 'border-red-500' : 'border-gray-300'}`}
+                          className={`w-full px-3 py-2 border rounded-md ${errors.coachNumber ? 'border-red-500' : 'border-gray-300'}`}
                           placeholder="Enter coach number (e.g., A1, B2)"
+                          required
                         />
-                        {errors.coach && <p className="mt-1 text-sm text-red-600">{errors.coach}</p>}
+                        {errors.coachNumber && <p className="mt-1 text-sm text-red-600">{errors.coachNumber}</p>}
                       </div>
 
                       <div>
@@ -188,20 +190,22 @@ export default function ComplaintPage() {
                           onChange={handleChange}
                           className={`w-full px-3 py-2 border rounded-md ${errors.seatNumber ? 'border-red-500' : 'border-gray-300'}`}
                           placeholder="Enter seat number (e.g., 12, 24B)"
+                          required
                         />
                         {errors.seatNumber && <p className="mt-1 text-sm text-red-600">{errors.seatNumber}</p>}
                       </div>
 
                       <div>
-                        <label htmlFor="source" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="sourceStation" className="block text-sm font-medium text-gray-700 mb-1">
                           Source Station *
                         </label>
                         <select
-                          id="source"
-                          name="source"
-                          value={formData.source}
+                          id="sourceStation"
+                          name="sourceStation"
+                          value={formData.sourceStation}
                           onChange={handleChange}
-                          className={`w-full px-3 py-2 border rounded-md ${errors.source ? 'border-red-500' : 'border-gray-300'}`}
+                          className={`w-full px-3 py-2 border rounded-md ${errors.sourceStation ? 'border-red-500' : 'border-gray-300'}`}
+                          required
                         >
                           {stations.map(station => (
                             <option key={station.value} value={station.value}>
@@ -209,19 +213,20 @@ export default function ComplaintPage() {
                             </option>
                           ))}
                         </select>
-                        {errors.source && <p className="mt-1 text-sm text-red-600">{errors.source}</p>}
+                        {errors.sourceStation && <p className="mt-1 text-sm text-red-600">{errors.sourceStation}</p>}
                       </div>
 
                       <div>
-                        <label htmlFor="destination" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="destinationStation" className="block text-sm font-medium text-gray-700 mb-1">
                           Destination Station *
                         </label>
                         <select
-                          id="destination"
-                          name="destination"
-                          value={formData.destination}
+                          id="destinationStation"
+                          name="destinationStation"
+                          value={formData.destinationStation}
                           onChange={handleChange}
-                          className={`w-full px-3 py-2 border rounded-md ${errors.destination ? 'border-red-500' : 'border-gray-300'}`}
+                          className={`w-full px-3 py-2 border rounded-md ${errors.destinationStation ? 'border-red-500' : 'border-gray-300'}`}
+                          required
                         >
                           {stations.map(station => (
                             <option key={station.value} value={station.value}>
@@ -229,7 +234,7 @@ export default function ComplaintPage() {
                             </option>
                           ))}
                         </select>
-                        {errors.destination && <p className="mt-1 text-sm text-red-600">{errors.destination}</p>}
+                        {errors.destinationStation && <p className="mt-1 text-sm text-red-600">{errors.destinationStation}</p>}
                       </div>
                     </div>
                     
@@ -245,6 +250,7 @@ export default function ComplaintPage() {
                         rows={6}
                         className={`w-full px-3 py-2 border rounded-md ${errors.complaint ? 'border-red-500' : 'border-gray-300'}`}
                         placeholder="Please describe your complaint in detail (minimum 20 characters)"
+                        required
                       />
                       {errors.complaint && <p className="mt-1 text-sm text-red-600">{errors.complaint}</p>}
                       <p className="mt-1 text-sm text-gray-500">
