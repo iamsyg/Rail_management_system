@@ -1,12 +1,11 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid import uuid4
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager
-from models import db
 from flask_jwt_extended import create_refresh_token, create_access_token
 import enum
-from sqlalchemy import Enum
+from sqlalchemy import Enum, Float
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
@@ -27,6 +26,8 @@ class User(db.Model):
     role: Mapped[RoleEnum] = mapped_column(Enum(RoleEnum), nullable=False, default=RoleEnum.user)
     refresh_token = mapped_column(db.String, nullable=True)
 
+    complaints = relationship('Complaint', back_populates='user')
+
     def __repr__(self) -> str:
         return f"User(id={self.id}, name={self.name}, email={self.email})"
     
@@ -37,22 +38,25 @@ class User(db.Model):
         return check_password_hash(self.password, password)
     
     def generate_access_token(self):
-        return create_access_token(identity={
-                "id": self.id,
+        return create_access_token(
+            identity=self.id,  # Primary identity is a string
+            additional_claims={  # Additional data as claims
                 "name": self.name,
                 "email": self.email,
-                "phoneNumber": self.phoneNumber,
+                "phone_number": self.phoneNumber,
                 "role": self.role.value
         })
     
     def generate_refresh_token(self):
-        return create_refresh_token(identity={
-            "id": self.id,
-            "name": self.name,
-            "email": self.email,
-            "phoneNumber": self.phoneNumber,
-            "role": self.role.value
-        })
+        return create_refresh_token(
+            identity=self.id,  # Primary identity is a string
+            additional_claims={  # Additional data as claims
+                "name": self.name,
+                "email": self.email,
+                "phone_number": self.phoneNumber,
+                "role": self.role.value
+            }
+        )
 
     @classmethod
     def get_user_by_email(cls, email):
@@ -65,3 +69,61 @@ class User(db.Model):
     def delete(self):
         db.session.delete(self)
         db.session.commit()
+
+
+
+
+
+class StatusEnum(enum.Enum):
+    complaintsNotProcessed = "complaintsNotProcessed"
+    complaintsProcessed = "complaintsProcessed"
+    complaintsClosed = "complaintsClosed"
+
+class Complaint(db.Model):
+
+    id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid4()))
+
+    user_id: Mapped[str] = mapped_column(db.ForeignKey('user.id'), nullable=False)
+
+    trainNumber: Mapped[str] = mapped_column(nullable=False)
+
+    pnrNumber: Mapped[str] = mapped_column(nullable=False, unique=True)
+
+    coachNumber: Mapped[str] = mapped_column(nullable=False)
+
+    seatNumber: Mapped[str] = mapped_column(nullable=False, unique=True)
+
+    sourceStation: Mapped[str] = mapped_column(nullable=False)
+
+    destinationStation: Mapped[str] = mapped_column(nullable=False)
+
+    complaint: Mapped[str] = mapped_column(nullable=False)
+
+    classification: Mapped[str] = mapped_column(nullable=True)
+
+    sentiment: Mapped[str] = mapped_column(nullable=True)
+
+    sentimentScore: Mapped[float] = mapped_column(Float,  nullable=True)
+
+    status: Mapped[StatusEnum] = mapped_column(Enum(StatusEnum), nullable=False, default=StatusEnum.complaintsNotProcessed) 
+
+    user = relationship("User", back_populates="complaints")
+
+    def __repr__(self) -> str:
+        return f"Complaint(id={self.id}, PNR={self.pnrNumber}, complaint={self.complaint})"
+
+    def save(self):
+        try:
+            db.session.add(self)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise e
+
+    def delete(self):
+        try:
+            db.session.delete(self)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise e

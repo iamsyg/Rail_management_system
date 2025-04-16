@@ -45,3 +45,5 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 - npm install @heroicons/react
 
 - npm install tailwindcss @tailwindcss/postcss daisyui@latest
+
+- pip install PyJWT
