@@ -5,6 +5,7 @@ from flask import jsonify
 from .models import RoleEnum
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_jwt_extended import set_access_cookies, set_refresh_cookies, decode_token, unset_jwt_cookies, get_jwt
+from flask_jwt_extended import decode_token
 
 auth_bp = Blueprint("auth", __name__)
 def generateAccessTokenAndRefreshToken(userEmail):
@@ -147,11 +148,11 @@ def signin_user():
                 "refreshToken": refresh_token
             })
 
-            response.set_cookie("access_token", access_token, httponly=True, secure=False, samesite="Lax")
-            response.set_cookie("refresh_token", refresh_token, httponly=True, secure=False, samesite="Lax")
+            # response.set_cookie("access_token", access_token, httponly=True, secure=False, samesite="Lax")
+            # response.set_cookie("refresh_token", refresh_token, httponly=True, secure=False, samesite="Lax")
 
-            # set_access_cookies(response, access_token)
-            # set_refresh_cookies(response, refresh_token)
+            set_access_cookies(response, access_token)
+            set_refresh_cookies(response, refresh_token)
 
             # session["name"] = user.name
             # session.permanent = True
@@ -217,9 +218,6 @@ def debug_cookies():
 def verify_token():
     try:
         # Manually decode token from cookie
-        from flask_jwt_extended import decode_token
-        from flask import request
-        
         token = request.cookies.get("access_token")
         if not token:
             return jsonify({"success": False, "message": "No token in cookies"}), 401

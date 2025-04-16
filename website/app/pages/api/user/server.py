@@ -6,6 +6,7 @@ from flask_cors import CORS
 from datetime import timedelta
 import os
 from dotenv import load_dotenv
+from .complaint import complaint_bp
 
 app = Flask(__name__)
 
@@ -28,7 +29,7 @@ app.config["JWT_COOKIE_SECURE"] = False  # True if using HTTPS only
 
 app.config["JWT_ACCESS_COOKIE_NAME"] = "access_token"
 app.config["JWT_REFRESH_COOKIE_NAME"] = "refresh_token"
-app.config["JWT_COOKIE_CSRF_PROTECT"] = True  # Set True in production with CSRF handling
+app.config["JWT_COOKIE_CSRF_PROTECT"] = False  # Set True in production with CSRF handling
 
 app.config["JWT_ACCESS_COOKIE_PATH"] = "/"  # access token valid for all routes
 app.config["JWT_REFRESH_COOKIE_PATH"] = "/auth/refresh"  # very important
@@ -39,7 +40,7 @@ CORS(
         origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(","),
         supports_credentials=True,
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["Content-Type", "Authorization", "X-Requested-With"]
+        allow_headers=["Content-Type", "Authorization", "X-Requested-With", "X-CSRF-TOKEN", "x-csrf-token"]
     )
 
 db.init_app(app)
@@ -51,8 +52,8 @@ with app.app_context():
 user_bp = Blueprint('user', __name__, url_prefix='/user')
 app.register_blueprint(auth_bp, url_prefix="/auth")
 
-complaint_bp = Blueprint('complaint', __name__, url_prefix='/complaint')
-app.register_blueprint(complaint_bp, url_prefix="/complaint")
+# complaint_bp = Blueprint('complaint', __name__)
+app.register_blueprint(complaint_bp, url_prefix="/complaints")
 
 @app.route("/status", methods=["GET"])
 def status():  
@@ -80,7 +81,7 @@ def missing_token_callback(error):
         jsonify(
             {
                 "message": "Request doesnt contain valid token",
-                "error": "authorization_header",
+                "error": error,
             }
         ),
         401,

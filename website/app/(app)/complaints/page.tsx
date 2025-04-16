@@ -24,6 +24,12 @@ interface FormErrors {
   complaint?: string;
 }
 
+function getCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  if (match) return match[2];
+  return null;
+}
+
 export default function ComplaintPage() {
   const [formData, setFormData] = useState<ComplaintFormData>({
     trainNumber: '',
@@ -49,19 +55,26 @@ export default function ComplaintPage() {
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
-    
+  
     if (!formData.trainNumber.trim()) newErrors.trainNumber = 'Train number is required';
+    else if (isNaN(Number(formData.trainNumber))) newErrors.trainNumber = 'Train number must be a number';
+  
     if (!formData.pnrNumber.trim()) newErrors.pnrNumber = 'PNR is required';
     else if (formData.pnrNumber.length !== 10) newErrors.pnrNumber = 'PNR must be 10 characters';
-    if (!formData.coachNumber.trim()) newErrors.coachNumber = 'CoachNumber number is required';
+    else if (isNaN(Number(formData.pnrNumber))) newErrors.pnrNumber = 'PNR must be numeric';
+  
+    if (!formData.coachNumber.trim()) newErrors.coachNumber = 'Coach number is required';
+  
     if (!formData.seatNumber.trim()) newErrors.seatNumber = 'Seat number is required';
-    if (!formData.sourceStation.trim()) newErrors.sourceStation = 'SourceStation station is required';
-    if (!formData.destinationStation.trim()) newErrors.destinationStation = 'DestinationStation station is required';
+    else if (isNaN(Number(formData.seatNumber))) newErrors.seatNumber = 'Seat number must be a number';
+  
+    if (!formData.sourceStation.trim()) newErrors.sourceStation = 'Source station is required';
+    if (!formData.destinationStation.trim()) newErrors.destinationStation = 'Destination station is required';
     if (!formData.complaint.trim()) newErrors.complaint = 'Complaint description is required';
-    
+  
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  };  
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -71,7 +84,23 @@ export default function ComplaintPage() {
       setIsSubmitting(true);
       try {
         // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        const response = await fetch("http://localhost:8080/complaints/", {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": getCookie("csrf_access_token") || " "  // your helper to read cookies
+          },
+          body: JSON.stringify(formData)
+        });
+
+        if(response.ok){
+          const data = await response.json();
+          console.log(data);
+        } else {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'An unexpected error occurred');
+        }
         
         console.log('Complaint submitted:', formData);
         setSubmitSuccess(true);
@@ -84,8 +113,8 @@ export default function ComplaintPage() {
           destinationStation: '',
           complaint: ''
         });
-      } catch (error) {
-        console.error('Error submitting complaint:', error);
+      } catch (error: any) {
+        console.error('Error submitting complaint:', error, error.message);
       } finally {
         setIsSubmitting(false);
       }
@@ -131,7 +160,7 @@ export default function ComplaintPage() {
                           Train Number *
                         </label>
                         <input
-                          type="text"
+                          type="number"
                           id="trainNumber"
                           name="trainNumber"
                           value={formData.trainNumber}
@@ -148,14 +177,14 @@ export default function ComplaintPage() {
                           PNR Number *
                         </label>
                         <input
-                          type="text"
+                          type="number"
                           id="pnrNumber"
                           name="pnrNumber"
                           value={formData.pnrNumber}
                           onChange={handleChange}
                           className={`w-full px-3 py-2 border rounded-md ${errors.pnrNumber ? 'border-red-500' : 'border-gray-300'}`}
                           placeholder="Enter 10-digit PNR"
-                          maxLength={10}
+                          max={9999999999}
                           required
                         />
                         {errors.pnrNumber && <p className="mt-1 text-sm text-red-600">{errors.pnrNumber}</p>}
@@ -183,13 +212,13 @@ export default function ComplaintPage() {
                           Seat Number *
                         </label>
                         <input
-                          type="text"
+                          type="number"
                           id="seatNumber"
                           name="seatNumber"
                           value={formData.seatNumber}
                           onChange={handleChange}
                           className={`w-full px-3 py-2 border rounded-md ${errors.seatNumber ? 'border-red-500' : 'border-gray-300'}`}
-                          placeholder="Enter seat number (e.g., 12, 24B)"
+                          placeholder="Enter seat number (e.g., 12, 24)"
                           required
                         />
                         {errors.seatNumber && <p className="mt-1 text-sm text-red-600">{errors.seatNumber}</p>}
