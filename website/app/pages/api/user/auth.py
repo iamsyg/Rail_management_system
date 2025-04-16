@@ -5,7 +5,9 @@ from flask import jsonify
 from .models import RoleEnum
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_jwt_extended import set_access_cookies, set_refresh_cookies, decode_token, unset_jwt_cookies, get_jwt
+from flask_jwt_extended import decode_token
 
+auth_bp = Blueprint("auth", __name__)
 def generateAccessTokenAndRefreshToken(userEmail):
     try:
         user = User.get_user_by_email(userEmail)
@@ -31,9 +33,6 @@ def generateAccessTokenAndRefreshToken(userEmail):
             "success": False,
             "message": f"Error generating tokens: {str(e)}"
         })
-
-
-auth_bp = Blueprint("auth", __name__)
 
 @auth_bp.route("/signup", methods=["POST"])
 def signup_user():
@@ -149,11 +148,11 @@ def signin_user():
                 "refreshToken": refresh_token
             })
 
-            response.set_cookie("access_token", access_token, httponly=True, secure=False, samesite="Lax")
-            response.set_cookie("refresh_token", refresh_token, httponly=True, secure=False, samesite="Lax")
+            # response.set_cookie("access_token", access_token, httponly=True, secure=False, samesite="Lax")
+            # response.set_cookie("refresh_token", refresh_token, httponly=True, secure=False, samesite="Lax")
 
-            # set_access_cookies(response, access_token)
-            # set_refresh_cookies(response, refresh_token)
+            set_access_cookies(response, access_token)
+            set_refresh_cookies(response, refresh_token)
 
             # session["name"] = user.name
             # session.permanent = True
@@ -172,8 +171,6 @@ def signin_user():
 def logout_user():
 
     response = jsonify({"message": "Logged out successfully"})
-    # response.headers.add("Set-Cookie", "access_token=; HttpOnly; Secure; SameSite=Lax; Max-Age=0")
-    # response.headers.add("Set-Cookie", "refresh_token=; HttpOnly; Secure; SameSite=Lax; Max-Age=0")
     unset_jwt_cookies(response)
     return response, 200
 
@@ -221,9 +218,6 @@ def debug_cookies():
 def verify_token():
     try:
         # Manually decode token from cookie
-        from flask_jwt_extended import decode_token
-        from flask import request
-        
         token = request.cookies.get("access_token")
         if not token:
             return jsonify({"success": False, "message": "No token in cookies"}), 401
