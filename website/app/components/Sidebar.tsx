@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { g } from "framer-motion/client";
 
 function Sidebar() {
   const [name, setName] = useState("");

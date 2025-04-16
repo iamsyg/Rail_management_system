@@ -28,6 +28,10 @@ function Navbar() {
       setMessage("Something went wrong");
     }
   };
+
+  const adminSigninHandler = () => {
+    router.push("/admin-signin")
+  }
   
 
   return( 
@@ -37,9 +41,12 @@ function Navbar() {
   <div className="flex-1">
     <a className="btn btn-ghost text-xl">RailComplainDesk</a>
   </div>
-  <div className="flex-none">
-    <button className="btn btn-square btn-ghost" onClick={logoutHandler}>
-    <IoIosLogOut />
+  <div className="flex gap-6 mr-3">
+    <button className="btn btn-square btn-ghost p-3" onClick={adminSigninHandler}>
+      Admin
+    </button>
+    <button className="btn btn-square btn-ghost p-3" onClick={logoutHandler}>
+    Logout
     </button>
   </div>
 </div>
