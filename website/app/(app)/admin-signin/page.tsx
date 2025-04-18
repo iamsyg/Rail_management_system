@@ -59,7 +59,7 @@ export default function Signin() {
     setIsSubmitting(true);
     
     try {
-      const response = await fetch('http://localhost:8080/auth/signin', {
+      const response = await fetch('http://localhost:8080/auth/admin-signin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -78,7 +78,7 @@ export default function Signin() {
 
       console.log(response)
       
-      router.push('/dashboard');
+      router.push('/admin-dashboard');
     } catch (error: any) {
       setErrors({ submit: error.message || 'An unexpected error occurred' });
     } finally {
@@ -91,14 +91,8 @@ export default function Signin() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
+            नमस्ते Admin!
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
-            <Link href="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
-              Create an account
-            </Link>
-          </p>
         </div>
         
         {errors.submit && (
