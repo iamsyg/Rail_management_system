@@ -7,10 +7,10 @@ import Sidebar from "@/app/components/Sidebar";
 function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-100">
-      <Navbar />
+      <Navbar panelName="Admin" />
       
       <div className="flex">
-        <Sidebar />
+        <Sidebar panelName="Admin"/>
         
         <main className="flex-1 p-8">
           <h1 className="text-2xl font-bold mb-8">Dashboard</h1>
