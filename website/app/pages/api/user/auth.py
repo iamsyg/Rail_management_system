@@ -235,3 +235,60 @@ def verify_token():
             "message": str(e)
         }), 401
 
+
+@auth_bp.route("/admin-signin", methods=["POST"])
+def admin_signin():
+
+    try:
+        data = request.get_json()
+        email = data.get("email", "").strip().lower()
+        password = data.get("password")
+
+        if not email or not password:
+            return jsonify({"error": "Missing email or password"}), 400
+
+        user = User.get_user_by_email(email)
+
+        if not user:
+            return jsonify({"error": "User not found"}), 401
+        
+        if user.role != RoleEnum.admin:
+                return jsonify({"error": "You are not an admin"}), 403
+
+        if user.check_password(password):
+
+            tokens, error_response = generateAccessTokenAndRefreshToken(user.email)
+
+            if error_response:
+                return error_response
+            
+            access_token = tokens["access_token"]
+            refresh_token = tokens["refresh_token"]
+
+            print("[DEBUG] access_token:", access_token)
+            print("[DEBUG] refresh_token:", refresh_token)
+
+            response = jsonify({
+                "message": "Login successful",
+                "success": True,
+                "user": {
+                    "id": user.id,
+                    "name": user.name,
+                    "email": user.email,
+                    "phoneNumber": user.phoneNumber,
+                    "role": user.role.value
+                },
+                "accessToken": access_token,
+                "refreshToken": refresh_token
+            })
+
+            set_access_cookies(response, access_token)
+            set_refresh_cookies(response, refresh_token)
+            
+            return response, 200
+
+        return jsonify({"error": "Invalid email or password"}), 401
+
+    except Exception as e:
+        print(f"[ERROR] during login: {str(e)}")
+        return jsonify({"error": "An error occurred during login"}), 500
