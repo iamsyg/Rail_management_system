@@ -59,7 +59,7 @@ export default function Signin() {
     setIsSubmitting(true);
     
     try {
-      const response = await fetch('http://localhost:8080/auth/signin', {
+      const response = await fetch('http://localhost:8080/auth/admin-signin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -78,7 +78,7 @@ export default function Signin() {
 
       console.log(response)
       
-      router.push('/dashboard');
+      router.push('/admin-dashboard');
     } catch (error: any) {
       setErrors({ submit: error.message || 'An unexpected error occurred' });
     } finally {
