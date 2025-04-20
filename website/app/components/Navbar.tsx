@@ -92,16 +92,16 @@ function Navbar({ panelName }: NavbarProps) {
 
   return (
     <>
-      <div className="navbar bg-neutral text-neutral-content">
+      <div className="navbar bg-neutral text-neutral-content sticky top-0">
         <div className="flex-1">
           <a className="btn btn-ghost text-xl">RailComplainDesk</a>
         </div>
         <div className="flex gap-6 mr-3">
-          <button className="btn btn-square btn-ghost p-3" onClick={checkAdmin}>
-            {panelName}
+          <button className="btn btn-square btn-ghost p-3 w-32" onClick={checkAdmin}>
+            Switch: {panelName}
           </button>
           <button
-            className="btn btn-square btn-ghost p-3"
+            className="btn btn-square btn-ghost p-3 w-24"
             onClick={logoutHandler}
           >
             Logout

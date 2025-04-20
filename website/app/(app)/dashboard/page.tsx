@@ -1,5 +1,4 @@
 "use client";
-
 import React from "react";
 import Navbar from "@/app/components/Navbar";
 import Sidebar from "@/app/components/Sidebar";
@@ -7,12 +6,19 @@ import Sidebar from "@/app/components/Sidebar";
 function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-100">
-      <Navbar panelName="Admin" />
-      
-      <div className="flex">
-        <Sidebar panelName="Admin"/>
-        
-        <main className="flex-1 p-8">
+      {/* Fixed Navbar with highest z-index */}
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <Navbar panelName="Admin" />
+      </div>
+
+      <div className="flex pt-16"> {/* Add padding-top to account for navbar */}
+        {/* Fixed Sidebar */}
+        <div className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 z-40">
+          <Sidebar panelName="Admin"/>
+        </div>
+
+        {/* Main content with proper margins */}
+        <main className="flex-1 ml-64 p-8 z-10"> {/* Add left margin for sidebar */}
           <h1 className="text-2xl font-bold mb-8">Dashboard</h1>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

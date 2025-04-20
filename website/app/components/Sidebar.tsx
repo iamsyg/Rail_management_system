@@ -1,123 +1,84 @@
 "use client";
-
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { div } from "framer-motion/client";
+import { usePathname } from "next/navigation";
+import { FiHome, FiSettings, FiAlertTriangle, FiList, FiUsers, FiBarChart2, FiLogOut } from "react-icons/fi";
 
-interface sidebarProps {
-  panelName: string;
+interface SidebarProps {
+  panelName: "User" | "Admin";
 }
 
-function Sidebar({ panelName }: sidebarProps) {
+const Sidebar = ({ panelName }: SidebarProps) => {
   const [name, setName] = useState("");
+  const [loading, setLoading] = useState(true);
+  const pathname = usePathname();
 
   useEffect(() => {
-    const getProfile = async () => {
+    // Simulate fetching user data
+    const fetchUser = async () => {
       try {
-        let response = await fetch("http://localhost:8080/auth/profile", {
-          method: "GET",
-          credentials: "include",
-        });
-
-        if (response.status === 401) {
-          const refreshResponse = await fetch(
-            "http://localhost:8080/auth/refresh",
-            {
-              method: "POST",
-              credentials: "include",
-              headers: {
-                "Content-Type": "application/json",
-              },
-            }
-          );
-
-          if (!refreshResponse.ok) {
-            throw new Error("Unable to refresh token");
-          }
-
-          response = await fetch("http://localhost:8080/auth/profile", {
-            method: "GET",
-            credentials: "include",
-          });
-        }
-
-        if (!response.ok) {
-          throw new Error("Final profile fetch failed");
-        }
-
-        const data = await response.json();
-        setName(data.user.name);
-      } catch (error) {
-        console.error("Error fetching data:", error);
+        // Replace with actual API call
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setName("Swayam Gupta");
+      } finally {
+        setLoading(false);
       }
     };
-
-    getProfile();
+    fetchUser();
   }, []);
 
+  const isActive = (path: string) => pathname === path;
+
+  const userLinks = [
+    { href: "/dashboard", label: "Dashboard", icon: <FiHome /> },
+    { href: "/account-settings", label: "Account Settings", icon: <FiSettings /> },
+    { href: "/complaints", label: "File Complaint", icon: <FiAlertTriangle /> },
+    { href: "/complaint-history", label: "Complaint History", icon: <FiList /> },
+  ];
+
+  const adminLinks = [
+    { href: "/admin-dashboard", label: "Dashboard", icon: <FiHome /> },
+    { href: "/admin/complaints", label: "Manage Complaints", icon: <FiAlertTriangle /> },
+    { href: "/admin/users", label: "User Management", icon: <FiUsers /> },
+    { href: "/admin/reports", label: "Reports", icon: <FiBarChart2 /> },
+  ];
+
+  const links = panelName === "Admin" ? userLinks : adminLinks;
+
   return (
-    <div>
-      <div className="drawer lg:drawer-open">
-        <input id="my-drawer-2" type="checkbox" className="drawer-toggle" />
-        <div className="drawer-content flex flex-col items-center justify-center">
-          <label
-            htmlFor="my-drawer-2"
-            className="btn btn-primary drawer-button lg:hidden"
-          >
-            Open drawer
-          </label>
-        </div>
-        <div className="drawer-side">
-          <label
-            htmlFor="my-drawer-2"
-            aria-label="close sidebar"
-            className="drawer-overlay"
-          ></label>
-          <ul className="menu min-h-full w-80 p-4 bg-black text-white text-xl gap-4">
-            {/* Sidebar content here */}
-            {name && (
-              <li className="text-xl font-bold mb-4">Welcome, {name}</li>
-            )}
-
-            {panelName === "User" ? (
-
-              <div className="flex flex-col gap-4">
-                <li>
-                  <Link href="/admin-dashboard" className="hover:bg-gray-800">
-                    Admin Dashboard
-                  </Link>
-                </li>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4">
-                
-                <li>
-                  <Link href="/dashboard" className="hover:bg-gray-800">
-                    Dashboard
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/account-settings" className="hover:bg-gray-800">
-                    Account Settings
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/complaints" className="hover:bg-gray-800">
-                    Complaints
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/complaint-history" className="hover:bg-gray-800">
-                    Complaint History
-                  </Link>
-                </li>
-              </div>
-            )}
-          </ul>
-        </div>
+    <div className="hidden md:flex flex-col w-64 min-h-screen bg-gray-800 text-white fixed left-0 overflow-y-auto">
+      {/* Sidebar Header */}
+      <div className="p-4 border-b border-gray-700">
+        
+        {loading ? (
+          <div className="animate-pulse h-6 w-3/4 bg-gray-600 mt-2 rounded"></div>
+        ) : (
+          <h1 className="text-xl text-gray-300 mt-1">Welcome, {name}</h1>
+        )}
       </div>
+
+      {/* Navigation Links */}
+      <nav className="flex-1 overflow-y-auto p-2">
+        <ul className="space-y-1">
+          {links.map((link) => (
+            <li key={link.href}>
+              <Link
+                href={link.href}
+                className={`flex items-center p-3 rounded-lg transition-colors ${
+                  isActive(link.href)
+                    ? "bg-blue-600 text-white"
+                    : "hover:bg-gray-700 text-gray-300"
+                }`}
+              >
+                <span className="mr-3">{link.icon}</span>
+                {link.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </div>
   );
-}
+};
 
 export default Sidebar;
