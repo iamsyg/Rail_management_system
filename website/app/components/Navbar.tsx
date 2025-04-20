@@ -94,7 +94,7 @@ function Navbar({ panelName }: NavbarProps) {
     <>
       <div className="navbar bg-neutral text-neutral-content sticky top-0">
         <div className="flex-1">
-          <a className="btn btn-ghost text-xl">RailComplainDesk</a>
+          <a className="btn btn-ghost text-xl">RailComplainDeskk</a>
         </div>
         <div className="flex gap-6 mr-3">
           <button className="btn btn-square btn-ghost p-3 w-32" onClick={checkAdmin}>
