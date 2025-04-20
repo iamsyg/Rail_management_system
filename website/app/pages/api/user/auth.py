@@ -234,4 +234,3 @@ def verify_token():
             "success": False,
             "message": str(e)
         }), 401
-

@@ -2,9 +2,13 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { g } from "framer-motion/client";
+import { div } from "framer-motion/client";
 
-function Sidebar() {
+interface sidebarProps {
+  panelName: string;
+}
+
+function Sidebar({ panelName }: sidebarProps) {
   const [name, setName] = useState("");
 
   useEffect(() => {
@@ -74,26 +78,41 @@ function Sidebar() {
             {name && (
               <li className="text-xl font-bold mb-4">Welcome, {name}</li>
             )}
-            <li>
-              <Link href="/dashboard" className="hover:bg-gray-800">
-                Dashboard
-              </Link>
-            </li>
-            <li>
-              <Link href="/account-settings" className="hover:bg-gray-800">
-                Account Settings
-              </Link>
-            </li>
-            <li>
-              <Link href="/complaints" className="hover:bg-gray-800">
-                Complaints
-              </Link>
-            </li>
-            <li>
-              <Link href="/complaint-history" className="hover:bg-gray-800">
-                Complaint History
-              </Link>
-            </li>
+
+            {panelName === "User" ? (
+
+              <div className="flex flex-col gap-4">
+                <li>
+                  <Link href="/admin-dashboard" className="hover:bg-gray-800">
+                    Admin Dashboard
+                  </Link>
+                </li>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                
+                <li>
+                  <Link href="/dashboard" className="hover:bg-gray-800">
+                    Dashboard
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/account-settings" className="hover:bg-gray-800">
+                    Account Settings
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/complaints" className="hover:bg-gray-800">
+                    Complaints
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/complaint-history" className="hover:bg-gray-800">
+                    Complaint History
+                  </Link>
+                </li>
+              </div>
+            )}
           </ul>
         </div>
       </div>

@@ -15,7 +15,7 @@ interface FormErrors {
   submit?: string;
 }
 
-export default function Signup() {
+export default function Signin() {
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
