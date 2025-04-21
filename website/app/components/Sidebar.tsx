@@ -2,7 +2,16 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FiHome, FiSettings, FiAlertTriangle, FiList, FiUsers, FiBarChart2, FiLogOut } from "react-icons/fi";
+import {
+  FiHome,
+  FiSettings,
+  FiAlertTriangle,
+  FiList,
+  FiUsers,
+  FiBarChart2,
+  FiLogOut,
+} from "react-icons/fi";
+import { useRouter } from "next/navigation";
 
 interface SidebarProps {
   panelName: "User" | "Admin";
@@ -12,14 +21,26 @@ const Sidebar = ({ panelName }: SidebarProps) => {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     // Simulate fetching user data
     const fetchUser = async () => {
       try {
-        // Replace with actual API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-        setName("Swayam Gupta");
+        const res = await fetch("http://localhost:8080/auth/profile", {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            router.push("/signin");
+          }
+        }
+
+        const userData = await res.json();
+        console.log(userData);
+        setName(userData.user.name);
       } finally {
         setLoading(false);
       }
@@ -31,14 +52,26 @@ const Sidebar = ({ panelName }: SidebarProps) => {
 
   const userLinks = [
     { href: "/dashboard", label: "Dashboard", icon: <FiHome /> },
-    { href: "/account-settings", label: "Account Settings", icon: <FiSettings /> },
+    {
+      href: "/account-settings",
+      label: "Account Settings",
+      icon: <FiSettings />,
+    },
     { href: "/complaints", label: "File Complaint", icon: <FiAlertTriangle /> },
-    { href: "/complaint-history", label: "Complaint History", icon: <FiList /> },
+    {
+      href: "/complaint-history",
+      label: "Complaint History",
+      icon: <FiList />,
+    },
   ];
 
   const adminLinks = [
     { href: "/admin-dashboard", label: "Dashboard", icon: <FiHome /> },
-    { href: "/admin/complaints", label: "Manage Complaints", icon: <FiAlertTriangle /> },
+    {
+      href: "/admin/complaints",
+      label: "Manage Complaints",
+      icon: <FiAlertTriangle />,
+    },
     { href: "/admin/users", label: "User Management", icon: <FiUsers /> },
     { href: "/admin/reports", label: "Reports", icon: <FiBarChart2 /> },
   ];
@@ -49,7 +82,6 @@ const Sidebar = ({ panelName }: SidebarProps) => {
     <div className="hidden md:flex flex-col w-64 min-h-screen bg-gray-800 text-white fixed left-0 overflow-y-auto">
       {/* Sidebar Header */}
       <div className="p-4 border-b border-gray-700">
-        
         {loading ? (
           <div className="animate-pulse h-6 w-3/4 bg-gray-600 mt-2 rounded"></div>
         ) : (
