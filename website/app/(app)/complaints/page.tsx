@@ -134,12 +134,16 @@ export default function ComplaintPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <div className="fixed top-0 left-0 right-0 z-50">
+      <Navbar panelName='Admin'/>
+      </div>
       
-      <div className="flex">
-        <Sidebar />
+      <div className="flex pt-16">
+      <div className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 z-40">
+          <Sidebar panelName="Admin"/>
++       </div>
         
-        <main className="flex-1 p-8">
+        <main className="flex-1 ml-64 p-8 z-10">
           <div className="max-w-6xl mx-auto">
             <h1 className="text-2xl font-bold mb-6">File a Train Complaint</h1>
             

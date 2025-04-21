@@ -49,3 +49,6 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 - pip install PyJWT
 
 - npm i react-toastify
+- npm install recharts
+- npm install recharts@2.8.0 @types/recharts@1.8.8
+- npm install @nextui-org/react
