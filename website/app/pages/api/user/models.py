@@ -87,11 +87,11 @@ class Complaint(db.Model):
 
     trainNumber: Mapped[str] = mapped_column(nullable=False)
 
-    pnrNumber: Mapped[str] = mapped_column(nullable=False, unique=True)
+    pnrNumber: Mapped[str] = mapped_column(nullable=False)
 
     coachNumber: Mapped[str] = mapped_column(nullable=False)
 
-    seatNumber: Mapped[str] = mapped_column(nullable=False, unique=True)
+    seatNumber: Mapped[str] = mapped_column(nullable=False)
 
     sourceStation: Mapped[str] = mapped_column(nullable=False)
 
