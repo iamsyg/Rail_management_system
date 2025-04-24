@@ -94,25 +94,27 @@ export default function ComplaintPage() {
           body: JSON.stringify(formData)
         });
 
+        const data = await response.json();
+
         if(response.ok){
-          const data = await response.json();
           console.log(data);
+
+          console.log('Complaint submitted:', formData);
+          setSubmitSuccess(true);
+          setFormData({
+            trainNumber: '',
+            pnrNumber: '',
+            coachNumber: '',
+            seatNumber: '',
+            sourceStation: '',
+            destinationStation: '',
+            complaint: ''
+          });
         } else {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'An unexpected error occurred');
+          console.error("Server error:", data);
+          throw new Error('An unexpected error occurred');
         }
-        
-        console.log('Complaint submitted:', formData);
-        setSubmitSuccess(true);
-        setFormData({
-          trainNumber: '',
-          pnrNumber: '',
-          coachNumber: '',
-          seatNumber: '',
-          sourceStation: '',
-          destinationStation: '',
-          complaint: ''
-        });
+    
       } catch (error: any) {
         console.error('Error submitting complaint:', error, error.message);
       } finally {
