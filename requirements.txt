@@ -11,3 +11,6 @@ transformers
 tensorflow
 tf-keras
 hf_xet
+
+flask-cors
+requests
