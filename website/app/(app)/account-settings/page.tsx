@@ -132,7 +132,7 @@ export default function AccountSettingsPage() {
                       value={formData.name}
                       onChange={handleChange}
                       className={`w-full px-3 py-2 border rounded-md ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
-                      placeholder='Nihar Pappu'
+                      placeholder='Name'
                     />
                     {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
                   </div>

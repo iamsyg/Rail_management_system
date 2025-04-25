@@ -1,6 +1,15 @@
+#importing os
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../..')))
+
 from flask import Blueprint, jsonify, request
 from .models import Complaint, StatusEnum, db
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+
+# importing ml pipeline 
+from utils.classifier import classify_user_complaints
+import threading
 
 complaint_bp = Blueprint('complaint', __name__)
 
@@ -49,7 +58,7 @@ def createComplaint():
             
         if len(complaint) < 20:
             return jsonify({"error": "Complaint description must be at least 20 characters"}), 400
-
+        
         # Create the new complaint
         new_complaint = Complaint(
             user_id=user_id,
@@ -65,6 +74,9 @@ def createComplaint():
         # Save to database
         db.session.add(new_complaint)
         db.session.commit()
+        
+         # Classify only this user's complaints in a background thread
+        threading.Thread(target=classify_user_complaints, args=(user_id,)).start()
 
         return jsonify(
             {
