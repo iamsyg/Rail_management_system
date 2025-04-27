@@ -90,7 +90,8 @@ def createComplaint():
                     "sourceStation": new_complaint.sourceStation,
                     "destinationStation": new_complaint.destinationStation,
                     "complaint": new_complaint.complaint,
-                    "status": new_complaint.status.value
+                    "status": new_complaint.status.value,
+                    "createdAt": new_complaint.created_at.isoformat()
                 }
             }), 201
 
