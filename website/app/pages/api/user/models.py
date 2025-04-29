@@ -2,13 +2,13 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid import uuid4
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_jwt_extended import JWTManager
 from flask_jwt_extended import create_refresh_token, create_access_token
 import enum
 from sqlalchemy import Enum, Float
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
+from datetime import datetime
 
 db = SQLAlchemy()
 jwt = JWTManager()
@@ -25,8 +25,9 @@ class User(db.Model):
     password: Mapped[str] = mapped_column(nullable=False)
     role: Mapped[RoleEnum] = mapped_column(Enum(RoleEnum), nullable=False, default=RoleEnum.user)
     refresh_token = mapped_column(db.String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default = datetime.utcnow)
 
-    complaints = relationship('Complaint', back_populates='user')
+    complaints = relationship('Complaint', back_populates='user', lazy='dynamic')
 
     def __repr__(self) -> str:
         return f"User(id={self.id}, name={self.name}, email={self.email})"
@@ -75,9 +76,9 @@ class User(db.Model):
 
 
 class StatusEnum(enum.Enum):
-    complaintsNotProcessed = "complaintsNotProcessed"
-    complaintsProcessed = "complaintsProcessed"
-    complaintsClosed = "complaintsClosed"
+    resolved = "Resolved"
+    inProgress = "In Progress"
+    pending = "Pending"
 
 class Complaint(db.Model):
 
@@ -105,7 +106,11 @@ class Complaint(db.Model):
 
     sentimentScore: Mapped[float] = mapped_column(Float,  nullable=True)
 
-    status: Mapped[StatusEnum] = mapped_column(Enum(StatusEnum), nullable=False, default=StatusEnum.complaintsNotProcessed) 
+    status: Mapped[StatusEnum] = mapped_column(Enum(StatusEnum), nullable=False, default=StatusEnum.pending)
+
+    resolution: Mapped[str] = mapped_column(nullable=True)
+    
+    created_at: Mapped[datetime] = mapped_column(default = datetime.utcnow)
 
     user = relationship("User", back_populates="complaints")
 

@@ -85,7 +85,9 @@ def signup_user():
                     "id": new_user.id,
                     "name": new_user.name,
                     "phoneNumber": new_user.phoneNumber,
-                    "email": new_user.email
+                    "email": new_user.email,
+                    "role": new_user.role.value,
+                    "createdAt": new_user.created_at.isoformat()
                 }
             }), 201
         

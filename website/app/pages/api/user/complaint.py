@@ -90,10 +90,53 @@ def createComplaint():
                     "sourceStation": new_complaint.sourceStation,
                     "destinationStation": new_complaint.destinationStation,
                     "complaint": new_complaint.complaint,
-                    "status": new_complaint.status.value
+                    "status": new_complaint.status.value,
+                    "createdAt": new_complaint.created_at.isoformat()
                 }
             }), 201
 
     except Exception as e:
         db.session.rollback()  # Rollback transaction on error
         return jsonify({"error": str(e)}), 400
+
+
+
+@complaint_bp.route("/get-complaints", methods=["GET"])
+@jwt_required()
+def getComplaints():
+    try:
+        current_user = get_jwt_identity()
+
+        # Get all complaints for the current user
+        complaints = Complaint.query.filter_by(user_id=current_user).order_by(Complaint.created_at.desc()).all()
+
+        if not complaints:
+            return jsonify({"success": True, "complaints": []}), 200
+
+        # Serialize the complaints
+        complaints_list = [
+            {
+                "id": complaint.id,
+                "trainNumber": complaint.trainNumber,
+                "pnrNumber": complaint.pnrNumber,
+                "coachNumber": complaint.coachNumber,
+                "seatNumber": complaint.seatNumber,
+                "sourceStation": complaint.sourceStation,
+                "destinationStation": complaint.destinationStation,
+                "complaint": complaint.complaint,
+                "status": complaint.status.value,
+                "createdAt": complaint.created_at.isoformat()
+            } for complaint in complaints
+        ]
+
+        return jsonify(
+            {
+                "success": True,
+                "message": "Complaints fetched successfully",
+                "totalComplaints": len(complaints),
+                "complaints": complaints_list
+            }), 200
+
+    except Exception as e:
+        print(f"[ERROR] Fetching user complaints: {str(e)}")
+        return jsonify({"success": False, "message": "An error occurred while fetching complaints"}), 500
