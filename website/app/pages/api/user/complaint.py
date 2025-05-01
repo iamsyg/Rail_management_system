@@ -140,3 +140,47 @@ def getComplaints():
     except Exception as e:
         print(f"[ERROR] Fetching user complaints: {str(e)}")
         return jsonify({"success": False, "message": "An error occurred while fetching complaints"}), 500
+
+
+@complaint_bp.route("/get-all-complaints", methods=["GET"])
+@jwt_required()
+def getAllComplaints():
+    try:
+
+        current_user = get_jwt_identity()
+
+        if get_jwt()["role"] != "admin":
+            return jsonify({"success": False, "message": "Unauthorized access"}), 403
+        
+        complaints = Complaint.query.order_by(Complaint.created_at.desc()).all()
+
+        if not complaints:
+            return jsonify({"success": True, "complaints": []}), 200
+
+        # Serialize the complaints
+        complaints_list = [
+            {
+                "id": complaint.id,
+                "trainNumber": complaint.trainNumber,
+                "pnrNumber": complaint.pnrNumber,
+                "coachNumber": complaint.coachNumber,
+                "seatNumber": complaint.seatNumber,
+                "sourceStation": complaint.sourceStation,
+                "destinationStation": complaint.destinationStation,
+                "complaint": complaint.complaint,
+                "status": complaint.status.value,
+                "createdAt": complaint.created_at.isoformat()
+            } for complaint in complaints
+        ]
+
+        return jsonify(
+            {
+                "success": True,
+                "message": "Complaints fetched successfully",
+                "totalComplaints": len(complaints),
+                "complaints": complaints_list
+            }), 200
+
+    except Exception as e:
+        print(f"[ERROR] Fetching all complaints: {str(e)}")
+        return jsonify({"success": False, "message": "An error occurred while fetching complaints"}), 500
