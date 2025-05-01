@@ -8,7 +8,7 @@ sentiment_classifier = hf_pipeline("sentiment-analysis", framework="tf", model="
 
 def classify_user_complaints(user_id):
     """Classify only the current logged-in user's unclassified complaints."""
-    print(f"Classifying complaints for user {user_id}" )
+    print(f"Classifying complaints for user {user_id}")
 
     from website.app.pages.api.user.server import app as flask_app
     with flask_app.app_context():
