@@ -1,10 +1,10 @@
+import warnings
+warnings.filterwarnings("ignore")
 import pickle
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer
 from utils.cleaner import clean_text
-import warnings
-warnings.filterwarnings("ignore")
 
 with open('./models/classiffication_model.pkl', 'rb') as file:
     classification_model = pickle.load(file)
@@ -33,5 +33,3 @@ complain_map = {
     6: 'No use',
     7: 'No use'
 }
-
-print("the file is running")

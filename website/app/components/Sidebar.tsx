@@ -68,7 +68,7 @@ const Sidebar = ({ panelName }: SidebarProps) => {
   const adminLinks = [
     { href: "/admin-dashboard", label: "Dashboard", icon: <FiHome /> },
     {
-      href: "/admin/complaints",
+      href: "/manage-complaints",
       label: "Manage Complaints",
       icon: <FiAlertTriangle />,
     },
