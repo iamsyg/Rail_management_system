@@ -219,7 +219,22 @@ def updateComplaintStatus(complaint_id):
 
         db.session.commit()
 
-        return jsonify({"success": True, "message": "Complaint status updated successfully"}), 200
+        return jsonify({
+            "message": "Complaint updated successfully",
+            "complaint": {
+                "id": complaint.id,
+                "trainNumber": complaint.trainNumber,
+                "pnrNumber": complaint.pnrNumber,
+                "coachNumber": complaint.coachNumber,
+                "seatNumber": complaint.seatNumber,
+                "sourceStation": complaint.sourceStation,
+                "destinationStation": complaint.destinationStation,
+                "complaint": complaint.complaint,
+                "status": complaint.status.value,
+                "resolution": complaint.resolution,
+                "createdAt": complaint.created_at.isoformat()
+            }
+        })
 
     except Exception as e:
         db.session.rollback()

@@ -39,6 +39,7 @@ const ManageComplaints: React.FC = () => {
     search: ""
   });
   const [resolutionNotes, setResolutionNotes] = useState<Record<string, string>>({});
+  const [complaintData, setComplaintData] = useState<Complaint | null>(null);
 
   // Fetch complaints from API
   useEffect(() => {
@@ -129,6 +130,10 @@ const ManageComplaints: React.FC = () => {
       if (payload.resolution) {
         setResolutionNotes(prev => ({ ...prev, [id]: "" }));
       }
+
+      const updatedComplaint = await response.json();
+      console.log("Updated complaint:", updatedComplaint);
+      setComplaintData(updatedComplaint.complaint);
   
     } catch (error) {
       console.error("Error updating complaint:", error);
