@@ -169,7 +169,11 @@ def getAllComplaints():
                 "destinationStation": complaint.destinationStation,
                 "complaint": complaint.complaint,
                 "status": complaint.status.value,
-                "createdAt": complaint.created_at.isoformat()
+                "createdAt": complaint.created_at.isoformat(),
+                "classification": complaint.classification,
+                "sentiment": complaint.sentiment,
+                "sentimentScore": complaint.sentimentScore,
+                "resolution": complaint.resolution
             } for complaint in complaints
         ]
 
