@@ -20,7 +20,7 @@ app.config["JWT_SECRET_KEY"] = os.environ.get("FLASK_JWT_SECRET_KEY")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=2)
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=7)
 
-app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+app.config["JWT_TOKEN_LOCATION"] = ["cookies", "headers"]
 # app.config["JWT_TOKEN_LOCATION"] = ["headers"]
 # app.config["JWT_HEADER_NAME"] = "Authorization"
 # app.config["JWT_HEADER_TYPE"] = "Bearer"
@@ -29,7 +29,7 @@ app.config["JWT_COOKIE_SECURE"] = True  # True if using HTTPS only
 
 app.config["JWT_ACCESS_COOKIE_NAME"] = "access_token"
 app.config["JWT_REFRESH_COOKIE_NAME"] = "refresh_token"
-app.config["JWT_COOKIE_CSRF_PROTECT"] = True  # Set True in production with CSRF handling
+app.config["JWT_COOKIE_CSRF_PROTECT"] = False  # Set True in production with CSRF handling
 
 app.config["JWT_ACCESS_COOKIE_PATH"] = "/"  # access token valid for all routes
 app.config["JWT_REFRESH_COOKIE_PATH"] = "/auth/refresh"  # very important

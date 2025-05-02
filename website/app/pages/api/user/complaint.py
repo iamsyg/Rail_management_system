@@ -184,3 +184,43 @@ def getAllComplaints():
     except Exception as e:
         print(f"[ERROR] Fetching all complaints: {str(e)}")
         return jsonify({"success": False, "message": "An error occurred while fetching complaints"}), 500
+
+
+
+@complaint_bp.route("/update/<complaint_id>", methods=["PUT"])
+@jwt_required()
+def updateComplaintStatus(complaint_id):
+    try:
+
+        print("complaint_id", complaint_id)
+        # Get the complaint to update
+        complaint = Complaint.query.get(complaint_id)
+
+        if not complaint:
+            return jsonify({"error": "Complaint not found"}), 404
+        
+        if get_jwt()["role"] != "admin":
+            return jsonify({"success": False, "message": "Unauthorized access"}), 403
+
+        # Update the status and resolution
+        data = request.get_json()
+        status = data.get("status")
+        resolution = data.get("resolution")
+        print("resolution", resolution)
+        print("status", status)
+
+        if status:
+            if status not in [status.value for status in StatusEnum]:
+                return jsonify({"error": "Invalid status"}), 400
+            complaint.status = StatusEnum(status)
+
+        if resolution:
+            complaint.resolution = resolution
+
+        db.session.commit()
+
+        return jsonify({"success": True, "message": "Complaint status updated successfully"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 400
