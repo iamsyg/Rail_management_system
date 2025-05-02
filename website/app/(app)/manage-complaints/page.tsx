@@ -375,13 +375,6 @@ const ManageComplaints: React.FC = () => {
                               )}
                             </div>
                           </div>
-
-                          {complaint.resolution && (
-                            <div className="bg-blue-50 p-3 rounded-lg mt-3">
-                            <h4 className="text-sm font-medium text-blue-800 mb-1">Last Saved Resolution</h4>
-                            <p className="text-blue-700 text-sm">{complaint.resolution}</p>
-                            </div>
-                        )}
                         </div>
                       </motion.div>
                     )}
