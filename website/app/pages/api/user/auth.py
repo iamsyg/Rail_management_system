@@ -12,11 +12,11 @@ def generateAccessTokenAndRefreshToken(userEmail):
     try:
         user = User.get_user_by_email(userEmail)
 
-        if not user :
-            return jsonify({
+        if not user:
+            return None, jsonify({
                 "success": False,
                 "message": "User not found"
-            }), 404
+            }), 404  # Optionally also return status code
 
         accessToken = user.generate_access_token()
         refreshToken = user.generate_refresh_token()
@@ -24,12 +24,15 @@ def generateAccessTokenAndRefreshToken(userEmail):
         user.refresh_token = refreshToken
         user.save()
 
-        token = { "access_token": accessToken, "refresh_token": refreshToken } 
+        token = {
+            "access_token": accessToken,
+            "refresh_token": refreshToken
+        }
 
         return token, None
 
     except Exception as e:
-        return jsonify({
+        return None, jsonify({
             "success": False,
             "message": f"Error generating tokens: {str(e)}"
         })
