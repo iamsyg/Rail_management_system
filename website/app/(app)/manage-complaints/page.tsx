@@ -18,6 +18,7 @@ interface Complaint {
   sourceStation: string;
   destinationStation: string;
   complaint: string;
+  classification: string; // Added classification field
   status: ComplaintStatus;
   createdAt: string;
   resolution?: string;
@@ -27,6 +28,7 @@ interface Filters {
   status: ComplaintStatus | "all";
   dateRange: DateRangeFilter;
   search: string;
+  classification: string; // Added classification filter
 }
 
 const ManageComplaints: React.FC = () => {
@@ -36,10 +38,11 @@ const ManageComplaints: React.FC = () => {
   const [filters, setFilters] = useState<Filters>({
     status: "all",
     dateRange: "all",
-    search: ""
+    search: "",
+    classification: "all" // Initialize classification filter
   });
   const [resolutionNotes, setResolutionNotes] = useState<Record<string, string>>({});
-  const [complaintData, setComplaintData] = useState<Complaint | null>(null);
+  const [uniqueClassifications, setUniqueClassifications] = useState<string[]>([]);
 
   // Fetch complaints from API
   useEffect(() => {
@@ -57,9 +60,11 @@ const ManageComplaints: React.FC = () => {
         const data = await response.json();
         setComplaints(data.complaints || []);
 
-        for (const complaint of data.complaints) {
-          console.log(complaint.id);
-        }
+        // Extract unique classifications
+        const classifications = Array.from(
+          new Set(data.complaints.map((c: Complaint) => c.classification))
+        ) as string[];
+        setUniqueClassifications(classifications);
       } catch (error) {
         console.error("Error fetching complaints:", error);
       } finally {
@@ -71,8 +76,10 @@ const ManageComplaints: React.FC = () => {
   }, []);
 
   const filteredComplaints = complaints.filter(complaint => {
+    // Status filter
     if (filters.status !== "all" && complaint.status !== filters.status) return false;
     
+    // Date range filter
     if (filters.dateRange !== "all") {
       const diffDays = Math.floor(
         (new Date().getTime() - new Date(complaint.createdAt).getTime()) / (1000 * 60 * 60 * 24)
@@ -81,6 +88,7 @@ const ManageComplaints: React.FC = () => {
       if (filters.dateRange === "30days" && diffDays > 30) return false;
     }
     
+    // Search filter
     if (filters.search) {
       const searchTerm = filters.search.toLowerCase();
       return (
@@ -90,6 +98,11 @@ const ManageComplaints: React.FC = () => {
         complaint.destinationStation.toLowerCase().includes(searchTerm) ||
         complaint.complaint.toLowerCase().includes(searchTerm)
       );
+    }
+    
+    // Classification filter
+    if (filters.classification !== "all" && complaint.classification !== filters.classification) {
+      return false;
     }
     
     return true;
@@ -105,7 +118,6 @@ const ManageComplaints: React.FC = () => {
   
       if (resolutionNotes[id]?.trim()) {
         payload.resolution = resolutionNotes[id].trim();
-        console.log("resolution", payload.resolution);
       }
   
       const response = await fetch(`http://localhost:8080/complaints/update/${id}`, {
@@ -130,11 +142,6 @@ const ManageComplaints: React.FC = () => {
       if (payload.resolution) {
         setResolutionNotes(prev => ({ ...prev, [id]: "" }));
       }
-
-      const updatedComplaint = await response.json();
-      console.log("Updated complaint:", updatedComplaint);
-      setComplaintData(updatedComplaint.complaint);
-  
     } catch (error) {
       console.error("Error updating complaint:", error);
     }
@@ -155,6 +162,14 @@ const ManageComplaints: React.FC = () => {
       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${statusConfig[status].color}`}>
         {statusConfig[status].icon}
         {status}
+      </span>
+    );
+  };
+
+  const ClassificationBadge: React.FC<{ classification: string }> = ({ classification }) => {
+    return (
+      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+        {classification}
       </span>
     );
   };
@@ -215,6 +230,22 @@ const ManageComplaints: React.FC = () => {
                 
                 <select
                   className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  value={filters.classification}
+                  onChange={(e) => setFilters(prev => ({
+                    ...prev, 
+                    classification: e.target.value
+                  }))}
+                >
+                  <option value="all">All Classifications</option>
+                  {uniqueClassifications.map((classification) => (
+                    <option key={classification} value={classification}>
+                      {classification}
+                    </option>
+                  ))}
+                </select>
+                
+                <select
+                  className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   value={filters.dateRange}
                   onChange={(e) => setFilters(prev => ({
                     ...prev, 
@@ -261,6 +292,7 @@ const ManageComplaints: React.FC = () => {
                           Train: {complaint.trainNumber} • 
                           PNR: {complaint.pnrNumber}
                         </span>
+                        <ClassificationBadge classification={complaint.classification} />
                       </div>
                     </div>
                     
@@ -305,6 +337,7 @@ const ManageComplaints: React.FC = () => {
                                   <p><span className="font-medium">Coach/Seat:</span> {complaint.coachNumber}/{complaint.seatNumber}</p>
                                   <p><span className="font-medium">Date:</span> {formatDate(complaint.createdAt)}</p>
                                   <p><span className="font-medium">PNR:</span> {complaint.pnrNumber}</p>
+                                  <p><span className="font-medium">Classification:</span> {complaint.classification}</p>
                                 </div>
                               </div>
                             </div>
