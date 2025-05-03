@@ -6,30 +6,46 @@ from .models import RoleEnum
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_jwt_extended import set_access_cookies, set_refresh_cookies, decode_token, unset_jwt_cookies, get_jwt
 from flask_jwt_extended import decode_token
+from database.lib.prisma import get_prisma_client
 
 auth_bp = Blueprint("auth", __name__)
-def generateAccessTokenAndRefreshToken(userEmail):
+async def generateAccessTokenAndRefreshToken(user_id: str):
     try:
-        user = User.get_user_by_email(userEmail)
+        prisma = get_prisma_client()
+
+        user = await prisma.user.find_unique(
+            where={"id": user_id}
+        )
 
         if not user:
-            return None, jsonify({
+            return None, {
                 "success": False,
                 "message": "User not found"
-            }), 404  # Optionally also return status code
+            }, 404
 
-        accessToken = user.generate_access_token()
-        refreshToken = user.generate_refresh_token()
+        access_token = create_access_token(identity=user["id"], additional_claims={
+            "name": user["name"],
+            "email": user["email"],
+            "phone_number": user["phoneNumber"],
+            "role": user["role"]
+        })
 
-        user.refresh_token = refreshToken
-        user.save()
+        refresh_token = create_refresh_token(identity=user["id"], additional_claims={
+            "name": user["name"],
+            "email": user["email"],
+            "phone_number": user["phoneNumber"],
+            "role": user["role"]
+        })
 
-        token = {
-            "access_token": accessToken,
-            "refresh_token": refreshToken
-        }
+        await prisma.user.update(
+            where={"id": user["id"]},
+            data={"refresh_token": refresh_token}
+        )
 
-        return token, None
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        }, None, 200
 
     except Exception as e:
         return None, jsonify({
