@@ -3,15 +3,25 @@ nltk
 scikit-learn
 matplotlib
 seaborn
-Flask
+# Flask
 python-dotenv
-flask-sqlalchemy
-flask-jwt-extended
+# flask-sqlalchemy
+# flask-jwt-extended
 transformers
 tensorflow
 tf-keras
 hf_xet
 
+
+# flask-cors
+# requests
+torch
+
+
+"fastapi[standard]"
+prisma
+fastapi-jwt-auth
+=======
 flask-cors
 requests
 torch
