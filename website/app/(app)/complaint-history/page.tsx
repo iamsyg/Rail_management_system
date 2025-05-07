@@ -91,8 +91,8 @@ function page() {
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
                   <option value="all">All Statuses</option>
-                  <option value="Resolved">Resolved</option>
-                  <option value="In Progress">In Progress</option>
+                  <option value="resolved">resolved</option>
+                  <option value="inProgress">inProgress</option>
                   <option value="Pending">Pending</option>
                 </select>
               </div>
@@ -117,9 +117,9 @@ function page() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
                     className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden border-l-4 ${
-                      item.status === "Resolved"
+                      item.status === "resolved"
                         ? "border-green-500"
-                        : item.status === "In Progress"
+                        : item.status === "inProgress"
                         ? "border-yellow-500"
                         : "border-red-500"
                     }`}
@@ -142,9 +142,9 @@ function page() {
                         <div className="flex items-center space-x-4">
                           <span
                             className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                              item.status === "Resolved"
+                              item.status === "resolved"
                                 ? "bg-green-100 text-green-800"
-                                : item.status === "In Progress"
+                                : item.status === "inProgress"
                                 ? "bg-yellow-100 text-yellow-800"
                                 : "bg-red-100 text-red-800"
                             }`}
@@ -223,7 +223,7 @@ function page() {
 
                               {/* Resolution/Status - Wider Column */}
                               <div className="md:col-span-4 space-y-3">
-                                {item.status === "Resolved" &&
+                                {item.status === "resolved" &&
                                   item.resolution && (
                                     <motion.div
                                       initial={{ opacity: 0 }}
@@ -239,7 +239,7 @@ function page() {
                                       </p>
                                     </motion.div>
                                   )}
-                                {item.status === "In Progress" &&
+                                {item.status === "inProgress" &&
                                   item.assignedTo && (
                                     <motion.div
                                       initial={{ opacity: 0 }}

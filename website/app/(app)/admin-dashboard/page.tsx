@@ -18,7 +18,7 @@ interface Complaint {
   classification: string;
   sentimentScore: number; // 0 to 1 decimal value
   sentiment: 'POSITIVE' | 'NEGATIVE';
-  status: 'Pending' | 'In Progress' | 'Resolved';
+  status: 'pending' | 'inProgress' | 'resolved';
   createdAt: string;
   resolution?: string;
 }
@@ -74,8 +74,8 @@ const AdminDashboard = () => {
         
         // Calculate statistics
         const total = fetchedComplaints.length;
-        const pending = fetchedComplaints.filter((c: Complaint) => c.status !== 'Resolved').length;
-        const resolved = fetchedComplaints.filter((c: Complaint) => c.status === 'Resolved').length;
+        const pending = fetchedComplaints.filter((c: Complaint) => c.status !== 'resolved').length;
+        const resolved = fetchedComplaints.filter((c: Complaint) => c.status === 'resolved').length;
         const totalSentiment = fetchedComplaints.reduce((sum: number, c: Complaint) => sum + c.sentimentScore, 0);
         
         setStats({
@@ -130,7 +130,7 @@ const AdminDashboard = () => {
       }
       
       monthlyData[monthYear].complaints++;
-      if (c.status === 'Resolved') {
+      if (c.status === 'resolved') {
         monthlyData[monthYear].resolved++;
       }
     });
@@ -326,7 +326,7 @@ const AdminDashboard = () => {
                     <Tooltip />
                     <Legend />
                     <Bar dataKey="complaints" fill="#8884d8" name="Complaints" />
-                    <Bar dataKey="resolved" fill="#82ca9d" name="Resolved" />
+                    <Bar dataKey="resolved" fill="#82ca9d" name="resolved" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -362,8 +362,8 @@ const AdminDashboard = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          complaint.status === 'Resolved' ? 'bg-green-100 text-green-800' : 
-                          complaint.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' : 
+                          complaint.status === 'resolved' ? 'bg-green-100 text-green-800' : 
+                          complaint.status === 'inProgress' ? 'bg-yellow-100 text-yellow-800' : 
                           'bg-red-100 text-red-800'
                         }`}>
                           {complaint.status}
