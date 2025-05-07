@@ -1,31 +1,3 @@
-# # from .models import db, jwt
-# # from .auth import auth_bp
-# # from .complaint import complaint_bp
-
-# from typing import Union
-
-# from fastapi import FastAPI
-
-# app = FastAPI()
-
-
-# from fastapi import FastAPI
-# import uvicorn
-
-# app = FastAPI()
-
-# @app.get("/")
-# def read_root():
-#     return {"message": "FastAPI is working!"}
-
-# if __name__ == "__main__":
-#     uvicorn.run("server:app", host="127.0.0.1", port=8080)
-
-
-
-
-
-
 from fastapi import FastAPI, Request, Depends, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
