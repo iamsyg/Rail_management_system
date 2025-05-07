@@ -6,7 +6,7 @@ import Sidebar from "@/app/components/Sidebar";
 import { FiSearch, FiCheck, FiClock, FiAlertCircle, FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 
-type ComplaintStatus = "Pending" | "In Progress" | "Resolved";
+type ComplaintStatus = "pending" | "inProgress" | "Resolved";
 type DateRangeFilter = "all" | "7days" | "30days";
 
 interface Complaint {
@@ -153,8 +153,8 @@ const ManageComplaints: React.FC = () => {
 
   const StatusBadge: React.FC<{ status: ComplaintStatus }> = ({ status }) => {
     const statusConfig = {
-      Pending: { color: "bg-red-100 text-red-800", icon: <FiAlertCircle className="mr-1" /> },
-      "In Progress": { color: "bg-yellow-100 text-yellow-800", icon: <FiClock className="mr-1" /> },
+      pending: { color: "bg-red-100 text-red-800", icon: <FiAlertCircle className="mr-1" /> },
+      "inProgress": { color: "bg-yellow-100 text-yellow-800", icon: <FiClock className="mr-1" /> },
       Resolved: { color: "bg-green-100 text-green-800", icon: <FiCheck className="mr-1" /> }
     };
     
@@ -223,8 +223,8 @@ const ManageComplaints: React.FC = () => {
                   }))}
                 >
                   <option value="all">All Statuses</option>
-                  <option value="Pending">Pending</option>
-                  <option value="In Progress">In Progress</option>
+                  <option value="pending">pending</option>
+                  <option value="inProgress">inProgress</option>
                   <option value="Resolved">Resolved</option>
                 </select>
                 
@@ -354,15 +354,15 @@ const ManageComplaints: React.FC = () => {
                                 <h4 className="text-sm font-medium text-gray-500 mb-2">Actions</h4>
                                 <div className="flex flex-wrap gap-2">
                                   <button
-                                    onClick={() => updateComplaint(complaint.id, "In Progress")}
-                                    disabled={complaint.status === "In Progress"}
+                                    onClick={() => updateComplaint(complaint.id, "inProgress")}
+                                    disabled={complaint.status === "inProgress"}
                                     className={`px-3 py-1 rounded text-xs font-medium ${
-                                      complaint.status === "In Progress" 
+                                      complaint.status === "inProgress" 
                                         ? "bg-gray-100 text-gray-500 cursor-not-allowed" 
                                         : "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
                                     }`}
                                   >
-                                    Mark In Progress
+                                    Mark inProgress
                                   </button>
                                   <button
                                     onClick={() => updateComplaint(complaint.id, "Resolved")}

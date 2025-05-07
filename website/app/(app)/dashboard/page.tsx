@@ -9,7 +9,7 @@ interface Complaint {
   id: string;
   classification: string;
   date: string;
-  status: 'Pending' | 'In Progress' | 'Resolved';
+  status: 'pending' | 'inProgress' | 'resolved';
   priority: string;
 }
 
@@ -48,15 +48,15 @@ const Dashboard = () => {
   }, []);
 
   // Calculate statistics
-  const pendingCount = complaints.filter(c => c.status === 'Pending').length;
-  const inProgressCount = complaints.filter(c => c.status === 'In Progress').length;
-  const resolvedCount = complaints.filter(c => c.status === 'Resolved').length;
+  const pendingCount = complaints.filter(c => c.status === 'pending').length;
+  const inProgressCount = complaints.filter(c => c.status === 'inProgress').length;
+  const resolvedCount = complaints.filter(c => c.status === 'resolved').length;
 
   // Prepare chart data
   const complaintStatusData = [
-    { name: 'Pending', value: pendingCount, color: '#EF4444' },
-    { name: 'In Progress', value: inProgressCount, color: '#F59E0B' },
-    { name: 'Resolved', value: resolvedCount, color: '#10B981' },
+    { name: 'pending', value: pendingCount, color: '#EF4444' },
+    { name: 'inProgress', value: inProgressCount, color: '#F59E0B' },
+    { name: 'resolved', value: resolvedCount, color: '#10B981' },
   ];
 
   // Group by month
@@ -67,12 +67,12 @@ const Dashboard = () => {
     
     if (existingMonth) {
       existingMonth.complaints++;
-      if (complaint.status === 'Resolved') existingMonth.resolved++;
+      if (complaint.status === 'resolved') existingMonth.resolved++;
     } else {
       acc.push({
         month,
         complaints: 1,
-        resolved: complaint.status === 'Resolved' ? 1 : 0
+        resolved: complaint.status === 'resolved' ? 1 : 0
       });
     }
     return acc;
@@ -122,35 +122,35 @@ const Dashboard = () => {
           
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {/* Pending Complaints Card */}
+            {/* pending Complaints Card */}
             <div className="bg-white rounded-lg shadow p-6 flex items-center gap-4">
               <div className="bg-red-100 p-4 rounded-full">
                 <FiAlertCircle className="w-6 h-6 text-red-600" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-700">Pending Complaints</h2>
+                <h2 className="text-lg font-semibold text-gray-700">pending Complaints</h2>
                 <p className="text-2xl font-bold mt-1">{pendingCount}</p>
               </div>
             </div>
             
-            {/* In Progress Card */}
+            {/* inrogress Card */}
             <div className="bg-white rounded-lg shadow p-6 flex items-center gap-4">
               <div className="bg-yellow-100 p-4 rounded-full">
                 <FiClock className="w-6 h-6 text-yellow-600" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-700">In Progress</h2>
+                <h2 className="text-lg font-semibold text-gray-700">inProgress</h2>
                 <p className="text-2xl font-bold mt-1">{inProgressCount}</p>
               </div>
             </div>
             
-            {/* Resolved Card */}
+            {/* resolved Card */}
             <div className="bg-white rounded-lg shadow p-6 flex items-center gap-4">
               <div className="bg-green-100 p-4 rounded-full">
                 <FiCheckCircle className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-700">Resolved</h2>
+                <h2 className="text-lg font-semibold text-gray-700">resolved</h2>
                 <p className="text-2xl font-bold mt-1">{resolvedCount}</p>
               </div>
             </div>
@@ -207,7 +207,7 @@ const Dashboard = () => {
                       <Tooltip />
                       <Legend />
                       <Bar dataKey="complaints" fill="#8884d8" name="Your Complaints" />
-                      <Bar dataKey="resolved" fill="#82ca9d" name="Resolved" />
+                      <Bar dataKey="resolved" fill="#82ca9d" name="resolved" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -236,8 +236,8 @@ const Dashboard = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{complaint.classification}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            complaint.status === 'Resolved' ? 'bg-green-100 text-green-800' : 
-                            complaint.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' : 
+                            complaint.status === 'resolved' ? 'bg-green-100 text-green-800' : 
+                            complaint.status === 'inProgress' ? 'bg-yellow-100 text-yellow-800' : 
                             'bg-red-100 text-red-800'
                           }`}>
                             {complaint.status}
