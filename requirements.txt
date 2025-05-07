@@ -21,3 +21,8 @@ torch
 "fastapi[standard]"
 prisma
 fastapi-jwt-auth
+=======
+flask-cors
+requests
+torch
+prisma
