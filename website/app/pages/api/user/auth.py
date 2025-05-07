@@ -1,241 +1,254 @@
-from flask import Blueprint, request, redirect, render_template, make_response, session
-from .models import User
-from flask_jwt_extended import create_refresh_token, create_access_token
-from flask import jsonify
-from .models import RoleEnum
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from flask_jwt_extended import set_access_cookies, set_refresh_cookies, decode_token, unset_jwt_cookies, get_jwt
-from flask_jwt_extended import decode_token
+from fastapi import APIRouter, Request, Depends, HTTPException, Response
+from fastapi.responses import JSONResponse
+from fastapi_jwt_auth import AuthJWT
+from pydantic import BaseModel
+from database.lib.prisma import get_prisma_client
+from uuid import uuid4
+from werkzeug.security import generate_password_hash, check_password_hash
+import enum
+from datetime import datetime
+from typing import Optional, Dict, Any, Tuple, Union
 
-auth_bp = Blueprint("auth", __name__)
-def generateAccessTokenAndRefreshToken(userEmail):
+# Define auth router
+auth_router = APIRouter()
+
+# Pydantic models for request validation
+class UserSignup(BaseModel):
+    name: str
+    email: str
+    phoneNumber: str
+    password: str
+
+class UserSignin(BaseModel):
+    email: str
+    password: str
+
+async def generate_access_token_and_refresh_token(user_id: str) -> Tuple[Optional[Dict[str, str]], Optional[Dict[str, Any]], int]:
     try:
-        user = User.get_user_by_email(userEmail)
+        prisma = await get_prisma_client()
+        user = await prisma.user.find_unique(where={"id": user_id})
 
         if not user:
-            return None, jsonify({
+            return None, {
                 "success": False,
                 "message": "User not found"
-            }), 404  # Optionally also return status code
+            }, 404
 
-        accessToken = user.generate_access_token()
-        refreshToken = user.generate_refresh_token()
-
-        user.refresh_token = refreshToken
-        user.save()
-
-        token = {
-            "access_token": accessToken,
-            "refresh_token": refreshToken
+        # Create tokens with AuthJWT
+        auth_jwt = AuthJWT()
+        
+        identity = {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "phone_number": user.phoneNumber,
+            "role": user.role
         }
+        
+        access_token = auth_jwt.create_access_token(subject=user.id, user_claims=identity)
+        refresh_token = auth_jwt.create_refresh_token(subject=user.id, user_claims=identity)
 
-        return token, None
+        # Save refresh token in DB
+        await prisma.user.update(
+            where={"id": user.id},
+            data={"refreshToken": refresh_token}
+        )
+
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        }, None, 200
 
     except Exception as e:
-        return None, jsonify({
+        import traceback
+        traceback.print_exc()
+        return None, {
             "success": False,
             "message": f"Error generating tokens: {str(e)}"
+        }, 500
+
+@auth_router.post("/signup", status_code=201)
+async def signup_user(user: UserSignup):
+    try:
+        name = user.name.strip()
+        email = user.email.strip().lower()
+        phone_number = user.phoneNumber.strip()
+        password = user.password.strip()
+
+        if not all([name, email, phone_number, password]):
+            raise HTTPException(status_code=400, detail="All fields are required")
+
+        prisma = await get_prisma_client()
+
+        existing_user = await prisma.user.find_unique(where={"email": email})
+        if existing_user:
+            raise HTTPException(status_code=409, detail="User already exists")
+
+        hashed_password = generate_password_hash(password)
+
+        new_user = await prisma.user.create(data={
+            "name": name,
+            "email": email,
+            "phoneNumber": phone_number,
+            "password": hashed_password,
+            "role": "user"
         })
 
-@auth_bp.route("/signup", methods=["POST"])
-def signup_user():
-    if request.method == "POST":
-        try:
-            # Get and validate form data
-            data = request.get_json()
-            name = data.get("name", "").strip()
-            email = data.get("email", "").strip().lower()
-            phoneNumber = data.get("phoneNumber", "").strip()
-            password = data.get("password", "").strip()
-            
-            if not all([name, email, phoneNumber, password]):
-                return jsonify({
-                    "success": False,
-                    "message": "All fields are required",
-                    "missing_fields": [
-                        field for field, value in [
-                            ("name", name),
-                            ("email", email), 
-                            ("phoneNumber", phoneNumber),
-                            ("password", password)
-                        ] if not value
-                    ]
-                }), 400
-            
-            existing_user = User.get_user_by_email(email)
-            if existing_user:
-                return jsonify({
-                    "success": False,
-                    "message": "User with this email already exists"
-                }), 409
-        
-            new_user = User(
-                name=name,
-                email=email,
-                phoneNumber = phoneNumber,
-                password = "",
-                role = RoleEnum.user
-            )
+        return {
+            "success": True,
+            "user": {
+                "id": new_user.id,
+                "email": new_user.email,
+                "name": new_user.name,
+                "phoneNumber": new_user.phoneNumber,
+                "role": new_user.role
+            }
+        }
 
-            new_user.set_password(password)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
-            new_user.save()
-            
-            return jsonify({
-                "success": True,
-                "message": "User created successfully",
-                "user": {
-                    "id": new_user.id,
-                    "name": new_user.name,
-                    "phoneNumber": new_user.phoneNumber,
-                    "email": new_user.email,
-                    "role": new_user.role.value,
-                    "createdAt": new_user.created_at.isoformat()
-                }
-            }), 201
-        
-        except Exception as e:
-            # Log the error for debugging
-            print(f"Error during signup: {str(e)}")
-            return jsonify({
-                "success": False,
-                "message": "An error occurred during signup"
-            }), 500
-    
-    # GET request or other methods
-    return jsonify({
-        "success": False,
-        "message": "Method not allowed",
-        "allowed_methods": ["POST"]
-    }), 405
-
-
-
-@auth_bp.route("/signin", methods=["POST"])
-def signin_user():
+@auth_router.post("/signin")
+async def signin_user(user: UserSignin, Authorize: AuthJWT = Depends()):
     try:
-        data = request.get_json()
-        email = data.get("email", "").strip().lower()
-        password = data.get("password")
+        email = user.email.strip().lower()
+        password = user.password
 
         if not email or not password:
-            return jsonify({"error": "Missing email or password"}), 400
+            raise HTTPException(status_code=400, detail="Missing email or password")
 
-        user = User.get_user_by_email(email)
+        prisma = await get_prisma_client()
+        user_db = await prisma.user.find_unique(where={"email": email})
 
-        if not user:
-            return jsonify({"error": "User not found"}), 401
+        if not user_db:
+            raise HTTPException(status_code=401, detail="User not found")
 
-        if user.check_password(password):
+        if not check_password_hash(user_db.password, password):
+            raise HTTPException(status_code=401, detail="Invalid email or password")
 
-            tokens, error_response = generateAccessTokenAndRefreshToken(user.email)
+        tokens, error_response, status = await generate_access_token_and_refresh_token(user_db.id)
 
-            if error_response:
-                return error_response
-            
-            access_token = tokens["access_token"]
-            refresh_token = tokens["refresh_token"]
+        if error_response:
+            raise HTTPException(status_code=status, detail=error_response["message"])
 
-            print("[DEBUG] access_token:", access_token)
-            print("[DEBUG] refresh_token:", refresh_token)
+        access_token = tokens["access_token"]
+        refresh_token = tokens["refresh_token"]
 
-            response = jsonify({
-                "message": "Login successful",
-                "success": True,
-                "user": {
-                    "id": user.id,
-                    "name": user.name,
-                    "email": user.email,
-                    "phoneNumber": user.phoneNumber,
-                    "role": user.role.value
-                },
-                "accessToken": access_token,
-                "refreshToken": refresh_token
-            })
-
-            # response.set_cookie("access_token", access_token, httponly=True, secure=False, samesite="Lax")
-            # response.set_cookie("refresh_token", refresh_token, httponly=True, secure=False, samesite="Lax")
-
-            set_access_cookies(response, access_token)
-            set_refresh_cookies(response, refresh_token)
-
-            # session["name"] = user.name
-            # session.permanent = True
-            # session.modified = True
-            
-            return response, 200
-
-        return jsonify({"error": "Invalid email or password"}), 401
-
-    except Exception as e:
-        print(f"[ERROR] during login: {str(e)}")
-        return jsonify({"error": "An error occurred during login"}), 500
-
-
-@auth_bp.route("/logout", methods=["POST"])
-def logout_user():
-
-    response = jsonify({"message": "Logged out successfully"})
-    unset_jwt_cookies(response)
-    return response, 200
-
-@auth_bp.route("/profile", methods=["GET"])
-@jwt_required()
-def get_logged_in_user():
-    # Get the identity (user ID)
-    user_id = get_jwt_identity()
-    
-    # Get additional claims
-    claims = get_jwt()
-    
-    return jsonify({
-        "success": True,
-        "user": {
-            "id": user_id,
-            "name": claims.get("name"),
-            "email": claims.get("email"),
-            "phone_number": claims.get("phone_number"),
-            "role": claims.get("role")
+        response = {
+            "message": "Login successful",
+            "success": True,
+            "user": {
+                "id": user_db.id,
+                "name": user_db.name,
+                "email": user_db.email,
+                "phoneNumber": user_db.phoneNumber,
+                "role": user_db.role
+            },
+            "access_token": access_token,
+            "refresh_token": refresh_token
         }
-    }), 200
 
-@auth_bp.route("/refresh", methods=["POST"])
-@jwt_required(refresh=True)
-def refresh():
-    if request.method != "POST":
-        return jsonify({"error": "Method Not Allowed"}), 405
-    
-    current_user = get_jwt_identity()
-    print("[DEBUG] current_user:", current_user)
-    access_token = create_access_token(identity=current_user)
-    response = jsonify({"access_token": access_token})
+        # Set cookies
+        response_obj = JSONResponse(content=response)
+        Authorize.set_access_cookies(access_token, response_obj)
+        Authorize.set_refresh_cookies(refresh_token, response_obj)
 
-    return response, 200
+        return response_obj
 
-@auth_bp.route("/debug-cookies")
-def debug_cookies():
-    print("Access Token Cookie:", request.cookies.get("access_token"))
-    print("Refresh Token Cookie:", request.cookies.get("refresh_token"))
-    return jsonify(success=True)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
 
-
-@auth_bp.route("/verify-token", methods=["GET"])
-def verify_token():
+@auth_router.post("/logout")
+async def logout_user(Authorize: AuthJWT = Depends()):
     try:
-        # Manually decode token from cookie
+        Authorize.jwt_required()
+        user_id = Authorize.get_jwt_subject()
+        
+        prisma = await get_prisma_client()
+        await prisma.user.update(where={"id": user_id}, data={"refreshToken": None})
+        
+        response = JSONResponse(content={"message": "Logged out successfully"})
+        Authorize.unset_jwt_cookies(response)
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@auth_router.get("/profile")
+async def get_logged_in_user(Authorize: AuthJWT = Depends()):
+    try:
+        Authorize.jwt_required()
+        
+        # Get the identity (user ID)
+        user_id = Authorize.get_jwt_subject()
+        
+        # Get additional claims
+        claims = Authorize.get_raw_jwt()
+        
+        return {
+            "success": True,
+            "user": {
+                "id": user_id,
+                "name": claims.get("name"),
+                "email": claims.get("email"),
+                "phone_number": claims.get("phone_number"),
+                "role": claims.get("role")
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
+@auth_router.post("/refresh")
+async def refresh(Authorize: AuthJWT = Depends()):
+    try:
+        Authorize.jwt_refresh_token_required()
+        
+        current_user = Authorize.get_jwt_subject()
+        user_claims = Authorize.get_raw_jwt()
+        
+        new_access_token = Authorize.create_access_token(subject=current_user, user_claims=user_claims)
+        
+        response = JSONResponse(content={"access_token": new_access_token})
+        Authorize.set_access_cookies(new_access_token, response)
+        
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
+@auth_router.get("/debug-cookies")
+async def debug_cookies(request: Request):
+    cookies = request.cookies
+    return {
+        "success": True,
+        "cookies": {
+            "access_token_exists": "access_token" in cookies,
+            "refresh_token_exists": "refresh_token" in cookies
+        }
+    }
+
+@auth_router.get("/verify-token")
+async def verify_token(request: Request, Authorize: AuthJWT = Depends()):
+    try:
+        # Get token from cookie
         token = request.cookies.get("access_token")
         if not token:
-            return jsonify({"success": False, "message": "No token in cookies"}), 401
+            raise HTTPException(status_code=401, detail="No token in cookies")
             
-        # Try to decode it
-        decoded = decode_token(token)
-        return jsonify({
+        # Verify and decode token
+        Authorize.jwt_required("cookies")
+        decoded = Authorize.get_raw_jwt()
+        
+        return {
             "success": True, 
             "decoded": decoded,
             "sub": decoded.get("sub")
-        }), 200
+        }
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "message": str(e)
-        }), 401
+        raise HTTPException(status_code=401, detail=str(e))
