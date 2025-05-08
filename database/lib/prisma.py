@@ -1,11 +1,9 @@
 from prisma import Prisma
 
-# Create a global instance placeholder
-_prisma = None
+prisma = Prisma()
 
-def get_prisma_client() -> Prisma:
-    global _prisma
-    if _prisma is None:
-        _prisma = Prisma()
-        _prisma.connect()
-    return _prisma
+async def get_prisma_client() -> Prisma:
+    global prisma
+    if not prisma.is_connected():
+        await prisma.connect()
+    return prisma

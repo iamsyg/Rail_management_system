@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../..')))
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi_jwt_auth import AuthJWT
 from pydantic import BaseModel, Field, validator
@@ -11,9 +11,9 @@ import traceback
 
 # importing ml pipeline 
 from utils.classifier import classify_user_complaints
-import threading
+import asyncio
 
-from database.lib.prisma import get_prisma_client
+from database.lib.prisma import get_prisma_client, prisma
 
 # Define router
 complaint_router = APIRouter()
@@ -75,14 +75,26 @@ class ComplaintUpdate(BaseModel):
 # Define valid statuses
 VALID_STATUSES = {"pending", "inProgress", "resolved"}
 
+# Background task for classification
+async def classify_in_background(user_id: str):
+    try:
+        print(f"Starting background classification for user {user_id}")
+        await classify_user_complaints(user_id)
+        print(f"Completed background classification for user {user_id}")
+    except Exception as e:
+        print(f"Error in background classification for user {user_id}: {e}")
+        traceback.print_exc()
+
 @complaint_router.post('/', status_code=201)
-async def create_complaint(complaint: ComplaintCreate, Authorize: AuthJWT = Depends()):
+async def create_complaint(complaint: ComplaintCreate, background_tasks: BackgroundTasks, Authorize: AuthJWT = Depends()):
     
     try:
         Authorize.jwt_required()
         current_user = Authorize.get_jwt_subject()
         
-        prisma = await get_prisma_client()
+        # Make sure prisma is connected
+        if not prisma.is_connected():
+            await prisma.connect()
         
         # Save complaint in Prisma
         new_complaint = await prisma.complaint.create(data={
@@ -96,6 +108,9 @@ async def create_complaint(complaint: ComplaintCreate, Authorize: AuthJWT = Depe
             "complaint": complaint.complaint,
             "status": "pending"  # default enum value
         })
+        
+        # Schedule the classification in the background
+        background_tasks.add_task(classify_in_background, current_user)
 
         return {
             "message": "Complaint created successfully",
@@ -112,7 +127,10 @@ async def get_complaints(Authorize: AuthJWT = Depends()):
         Authorize.jwt_required()
         user_id = Authorize.get_jwt_subject()
 
-        prisma = await get_prisma_client()
+        # Ensure prisma is connected
+        if not prisma.is_connected():
+            await prisma.connect()
+            
         complaints = await prisma.complaint.find_many(
             where={
                 "userId": user_id
@@ -162,7 +180,10 @@ async def get_all_complaints(Authorize: AuthJWT = Depends()):
         if claims["role"] != "admin":
             raise HTTPException(status_code=403, detail="Unauthorized access")
 
-        prisma = await get_prisma_client()
+        # Ensure prisma is connected
+        if not prisma.is_connected():
+            await prisma.connect()
+            
         complaints = await prisma.complaint.find_many()
 
         complaints = sorted(complaints, key=lambda c: c.createdAt, reverse=True)
@@ -220,9 +241,11 @@ async def update_complaint_status(complaint_id: str, update_data: ComplaintUpdat
         
         if not data_dict:
             raise HTTPException(status_code=400, detail="No update data provided")
-            
-        prisma = await get_prisma_client()
         
+        # Ensure prisma is connected
+        if not prisma.is_connected():
+            await prisma.connect()
+            
         # Update the complaint
         updated_complaint = await prisma.complaint.update(
             where={"id": complaint_id},
@@ -251,3 +274,18 @@ async def update_complaint_status(complaint_id: str, update_data: ComplaintUpdat
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=400, detail=str(e))
+
+# Add a manual endpoint to trigger classification for debugging
+@complaint_router.post("/trigger-classification")
+async def trigger_classification(Authorize: AuthJWT = Depends()):
+    try:
+        Authorize.jwt_required()
+        user_id = Authorize.get_jwt_subject()
+        
+        # Run classification directly
+        await classify_user_complaints(user_id)
+        
+        return {"message": "Classification triggered successfully"}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
