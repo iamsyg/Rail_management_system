@@ -49,4 +49,3 @@ async def classify_user_complaints(user_id):
         print(f"Error accessing complaints for user {user_id}: {e}")
 
         # pass
-
