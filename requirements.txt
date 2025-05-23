@@ -18,10 +18,10 @@ hf_xet
 torch
 
 
-"fastapi[standard]"
+fastapi[standard]
 prisma
 fastapi-jwt-auth
-=======
+
 flask-cors
 requests
 torch
