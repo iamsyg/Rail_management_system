@@ -129,7 +129,7 @@ from database.lib.prisma import prisma
 load_dotenv()
 
 class Settings(BaseSettings):
-    authjwt_secret_key: str = os.environ.get("FLASK_JWT_SECRET_KEY", "default-key")
+    authjwt_secret_key: str = os.environ.get("FLASK_JWT_SECRET_KEY", "eternity")
     authjwt_access_token_expires: timedelta = timedelta(days=2)
     authjwt_refresh_token_expires: timedelta = timedelta(days=7)
     authjwt_token_location: set = {"cookies", "headers"}

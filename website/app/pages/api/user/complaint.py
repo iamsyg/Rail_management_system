@@ -319,7 +319,7 @@ from database.lib.prisma import get_prisma_client, prisma
 complaint_router = APIRouter()
 
 # JWT Configuration
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key")
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "eternity")
 JWT_ALGORITHM = "HS256"
 
 class AuthJWT:
