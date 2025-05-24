@@ -1,3 +1,46 @@
+import os
+import sys
+
+# Handle NLTK downloads for production deployment
+def setup_nltk_for_production():
+    """Setup NLTK for production environment"""
+    try:
+        import nltk
+        
+        # Set up NLTK data directory in a writable location
+        nltk_data_dir = '/tmp/nltk_data'
+        if not os.path.exists(nltk_data_dir):
+            os.makedirs(nltk_data_dir)
+        
+        # Add to NLTK data path
+        if nltk_data_dir not in nltk.data.path:
+            nltk.data.path.append(nltk_data_dir)
+        
+        # Download required resources
+        resources = ['stopwords', 'punkt', 'wordnet']
+        for resource in resources:
+            try:
+                nltk.data.find(f'corpora/{resource}' if resource != 'punkt' else f'tokenizers/{resource}')
+            except LookupError:
+                print(f"Downloading NLTK {resource}...")
+                nltk.download(resource, download_dir=nltk_data_dir, quiet=True)
+                
+        print("NLTK setup completed successfully")
+        
+    except Exception as e:
+        print(f"Error setting up NLTK: {e}")
+        print("Continuing without NLTK - using fallback text processing")
+
+# Run setup if this looks like a production environment
+if os.getenv('RENDER') or os.getenv('PORT') or '/opt/render' in os.getcwd():
+    setup_nltk_for_production()
+
+
+
+
+
+
+
 import threading
 import subprocess
 import os
