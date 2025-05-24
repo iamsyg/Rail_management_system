@@ -311,7 +311,6 @@ import traceback
 
 # importing ml pipeline 
 from utils.classifier import classify_user_complaints
-import asyncio
 
 from database.lib.prisma import get_prisma_client, prisma
 

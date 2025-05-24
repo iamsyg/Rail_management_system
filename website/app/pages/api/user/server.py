@@ -112,10 +112,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 import jwt
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 from datetime import timedelta
 import os
 from dotenv import load_dotenv
+from contextlib import asynccontextmanager
 import uvicorn
 
 # Import blueprints (converted to routers in FastAPI)
@@ -141,8 +142,19 @@ class Settings(BaseSettings):
     authjwt_refresh_cookie_path: str = "/auth/refresh"
     authjwt_cookie_samesite: str = "lax"
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    print("[Prisma] Connecting Prisma client...")
+    await prisma.connect()
+    yield
+    # Shutdown
+    if prisma.is_connected():
+        print("[Prisma] Disconnecting Prisma client...")
+        await prisma.disconnect()
+
 def create_app():
-    app = FastAPI()
+    app = FastAPI(lifespan=lifespan)
     
     # Setup CORS
     frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
@@ -185,22 +197,11 @@ def create_app():
     async def status():
         return {"message": "Success", "status": "online"}
     
-    # Startup and shutdown events for Prisma
-    @app.on_event("startup")
-    async def startup():
-        print("[Prisma] Connecting Prisma client...")
-        await prisma.connect()
-    
-    @app.on_event("shutdown")
-    async def shutdown():
-        if prisma.is_connected():
-            print("[Prisma] Disconnecting Prisma client...")
-            await prisma.disconnect()
-    
     return app
 
 # Create the application instance
 app = create_app()
 
 if __name__ == "__main__":
-    uvicorn.run("website.app.pages.api.user.server:app", host="127.0.0.1", port=8080, reload=True)
+    port = int(os.environ.get("PORT", 8080))
+    uvicorn.run("website.app.pages.api.user.server:app", host="0.0.0.0", port=port, reload=False)

@@ -33,3 +33,4 @@ Werkzeug
 email-validator
 
 bcrypt
+pydantic-settings
