@@ -18,9 +18,13 @@ fastapi[standard]
 torch
 
 
-fastapi[standard]
+
+
 prisma
 fastapi-jwt-auth
+prisma
+# fastapi-jwt-auth
+
 
 flask-cors
 requests
