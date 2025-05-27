@@ -19,10 +19,22 @@ torch
 
 
 
+
 prisma
 fastapi-jwt-auth
+prisma
+# fastapi-jwt-auth
+
 
 flask-cors
 requests
 torch
 prisma
+
+PyJWT
+Werkzeug
+
+email-validator
+
+bcrypt
+pydantic-settings
