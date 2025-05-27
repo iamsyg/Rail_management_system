@@ -11,7 +11,7 @@ transformers
 tensorflow
 tf-keras
 hf_xet
-
+fastapi[standard]
 
 # flask-cors
 # requests
@@ -20,7 +20,7 @@ torch
 
 fastapi[standard]
 prisma
-# fastapi-jwt-auth
+fastapi-jwt-auth
 
 flask-cors
 requests
