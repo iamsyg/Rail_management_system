@@ -197,12 +197,53 @@ def create_app():
             )
     
     # Startup and shutdown events
+    # @app.on_event("startup")
+    # async def startup():
+    #     print("[Server] Starting up...")
+    #     print(f"[Environment] {os.environ.get('ENVIRONMENT', 'development')}")
+    #     print("[Prisma] Connecting Prisma client...")
+    #     await prisma.connect()
+    #     print("[Server] Startup complete")
+
+    # Startup and shutdown events
     @app.on_event("startup")
     async def startup():
         print("[Server] Starting up...")
         print(f"[Environment] {os.environ.get('ENVIRONMENT', 'development')}")
+        
+        # Try to fetch Prisma binary if it doesn't exist
+        try:
+            import subprocess
+            import sys
+            print("[Prisma] Checking for query engine binary...")
+            result = subprocess.run([sys.executable, "-m", "prisma", "py", "fetch"], 
+                                  check=True, capture_output=True, text=True, timeout=60)
+            print("[Prisma] Binary fetch successful")
+        except subprocess.CalledProcessError as e:
+            print(f"[Prisma] Warning: Could not fetch binary: {e}")
+            print(f"[Prisma] stdout: {e.stdout}")
+            print(f"[Prisma] stderr: {e.stderr}")
+        except subprocess.TimeoutExpired:
+            print("[Prisma] Warning: Binary fetch timed out")
+        except Exception as e:
+            print(f"[Prisma] Warning: Unexpected error during binary fetch: {e}")
+        
         print("[Prisma] Connecting Prisma client...")
-        await prisma.connect()
+        try:
+            await prisma.connect()
+            print("[Prisma] Connection successful")
+        except Exception as e:
+            print(f"[Prisma] Connection failed: {e}")
+            # Try one more time after a brief delay
+            import asyncio
+            await asyncio.sleep(2)
+            try:
+                await prisma.connect()
+                print("[Prisma] Connection successful on retry")
+            except Exception as retry_e:
+                print(f"[Prisma] Connection failed on retry: {retry_e}")
+                raise
+        
         print("[Server] Startup complete")
     
     @app.on_event("shutdown")
