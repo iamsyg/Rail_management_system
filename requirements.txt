@@ -13,7 +13,7 @@ tf-keras
 hf_xet
 fastapi[standard]
 
-
+ 
 # flask-cors
 # requests
 torch
