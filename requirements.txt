@@ -26,3 +26,4 @@ flask-cors
 requests
 torch
 prisma
+pydantic<2.0
