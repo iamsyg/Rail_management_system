@@ -1,0 +1,17 @@
+pandas
+nltk
+scikit-learn
+matplotlib
+seaborn
+Flask
+python-dotenv
+flask-sqlalchemy
+flask-jwt-extended
+transformers
+tensorflow
+tf-keras
+hf_xet
+
+flask-cors
+requests
+torch
