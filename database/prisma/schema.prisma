@@ -6,7 +6,7 @@
 
 generator client {
   provider = "prisma-client-py"
-  binaryTargets = ["debian-openssl-1.1.x"]
+  previewFeatures = ["queryCompiler", "driverAdapters"]
 }
 
 datasource db {
