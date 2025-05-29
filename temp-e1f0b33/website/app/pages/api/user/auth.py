@@ -143,7 +143,7 @@ async def signup_user(user_data: UserSignup, db: Session = Depends(get_db)):
         new_user = User(
             name=name,
             email=email,
-            phone_number=phone_number,
+            phoneNumber=phone_number,
             password=hashed_password,
             role=RoleEnum.user
         )
