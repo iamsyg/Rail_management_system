@@ -1,31 +1,42 @@
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Column, String, Float, Enum, DateTime, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, Session
 from uuid import uuid4
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_jwt_extended import create_refresh_token, create_access_token
+from jose import jwt
 import enum
-from sqlalchemy import Enum, Float
+from datetime import datetime, timedelta
+import os
+from .database import Base
+from .config import load_dotenv
+load_dotenv()
 
-from flask_sqlalchemy import SQLAlchemy
-from flask_jwt_extended import JWTManager
-from datetime import datetime
+# Base = declarative_base()
 
-db = SQLAlchemy()
-jwt = JWTManager()
+# JWT Configuration
+JWT_SECRET_KEY = os.environ.get("FLASK_JWT_SECRET_KEY")
+JWT_ALGORITHM = "HS256"
+JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=2)
+JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=7)
+
+if not JWT_SECRET_KEY:
+    raise ValueError("Missing FLASK_JWT_SECRET_KEY in environment variables")
 
 class RoleEnum(enum.Enum):
     user = "user"
     admin = "admin"
 
-class User(db.Model):
-    id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid4()))
-    name: Mapped[str] = mapped_column(nullable=False)
-    email: Mapped[str] = mapped_column(nullable=False, unique=True)
-    phoneNumber: Mapped[str] = mapped_column(nullable=False, unique=True)
-    password: Mapped[str] = mapped_column(nullable=False)
-    role: Mapped[RoleEnum] = mapped_column(Enum(RoleEnum), nullable=False, default=RoleEnum.user)
-    refresh_token = mapped_column(db.String, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(default = datetime.utcnow)
+class User(Base):
+    __tablename__ = "user"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=False, unique=True)
+    phoneNumber = Column(String, nullable=False, unique=True)
+    password = Column(String, nullable=False)
+    role = Column(Enum(RoleEnum), nullable=False, default=RoleEnum.user)
+    refresh_token = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
     complaints = relationship('Complaint', back_populates='user', lazy='dynamic')
 
@@ -39,96 +50,84 @@ class User(db.Model):
         return check_password_hash(self.password, password)
     
     def generate_access_token(self):
-        return create_access_token(
-            identity=self.id,  # Primary identity is a string
-            additional_claims={  # Additional data as claims
-                "name": self.name,
-                "email": self.email,
-                "phone_number": self.phoneNumber,
-                "role": self.role.value
-        })
+        payload = {
+            "sub": self.id,
+            "name": self.name,
+            "email": self.email,
+            "phone_number": self.phoneNumber,
+            "role": self.role.value,
+            "exp": datetime.utcnow() + JWT_ACCESS_TOKEN_EXPIRES,
+            "type": "access"
+        }
+        return jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
     
     def generate_refresh_token(self):
-        return create_refresh_token(
-            identity=self.id,  # Primary identity is a string
-            additional_claims={  # Additional data as claims
-                "name": self.name,
-                "email": self.email,
-                "phone_number": self.phoneNumber,
-                "role": self.role.value
-            }
-        )
+        payload = {
+            "sub": self.id,
+            "name": self.name,
+            "email": self.email,
+            "phone_number": self.phoneNumber,
+            "role": self.role.value,
+            "exp": datetime.utcnow() + JWT_REFRESH_TOKEN_EXPIRES,
+            "type": "refresh"
+        }
+        return jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
     @classmethod
-    def get_user_by_email(cls, email):
-        return cls.query.filter_by(email=email).first()
+    def get_user_by_email(cls, email: str, db: Session):
+        return db.query(cls).filter(cls.email == email).first()
 
-    def save(self):
-        db.session.add(self)
-        db.session.commit()
+    def save(self, db: Session):
+        db.add(self)
+        db.commit()
+        db.refresh(self)
 
-    def delete(self):
-        db.session.delete(self)
-        db.session.commit()
-
-
-
-
+    def delete(self, db: Session):
+        db.delete(self)
+        db.commit()
 
 class StatusEnum(enum.Enum):
     resolved = "Resolved"
     inProgress = "In Progress"
     pending = "Pending"
 
-class Complaint(db.Model):
+class Complaint(Base):
+    __tablename__ = "complaint"
 
-    id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid4()))
-
-    user_id: Mapped[str] = mapped_column(db.ForeignKey('user.id'), nullable=False)
-
-    trainNumber: Mapped[str] = mapped_column(nullable=False)
-
-    pnrNumber: Mapped[str] = mapped_column(nullable=False)
-
-    coachNumber: Mapped[str] = mapped_column(nullable=False)
-
-    seatNumber: Mapped[str] = mapped_column(nullable=False)
-
-    sourceStation: Mapped[str] = mapped_column(nullable=False)
-
-    destinationStation: Mapped[str] = mapped_column(nullable=False)
-
-    complaint: Mapped[str] = mapped_column(nullable=False)
-
-    classification: Mapped[str] = mapped_column(nullable=True)
-
-    sentiment: Mapped[str] = mapped_column(nullable=True)
-
-    sentimentScore: Mapped[float] = mapped_column(Float,  nullable=True)
-
-    status: Mapped[StatusEnum] = mapped_column(Enum(StatusEnum), nullable=False, default=StatusEnum.pending)
-
-    resolution: Mapped[str] = mapped_column(nullable=True)
-    
-    created_at: Mapped[datetime] = mapped_column(default = datetime.utcnow)
+    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+    user_id = Column(String, ForeignKey('user.id'), nullable=False)
+    trainNumber = Column(String, nullable=False)
+    pnrNumber = Column(String, nullable=False)
+    coachNumber = Column(String, nullable=False)
+    seatNumber = Column(String, nullable=False)
+    sourceStation = Column(String, nullable=False)
+    destinationStation = Column(String, nullable=False)
+    complaint = Column(String, nullable=False)
+    classification = Column(String, nullable=True)
+    sentiment = Column(String, nullable=True)
+    sentimentScore = Column(Float, nullable=True)
+    status = Column(Enum(StatusEnum), nullable=False, default=StatusEnum.pending)
+    resolution = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="complaints")
 
     def __repr__(self) -> str:
         return f"Complaint(id={self.id}, PNR={self.pnrNumber}, complaint={self.complaint})"
 
-    def save(self):
+    def save(self, db: Session):
         try:
-            db.session.add(self)
-            db.session.commit()
+            db.add(self)
+            db.commit()
+            db.refresh(self)
         except Exception as e:
-            db.session.rollback()
+            db.rollback()
             raise e
 
-    def delete(self):
+    def delete(self, db: Session):
         try:
-            db.session.delete(self)
-            db.session.commit()
+            db.delete(self)
+            db.commit()
         except Exception as e:
-            db.session.rollback()
+            db.rollback()
             raise e

@@ -1,232 +1,274 @@
-#importing os
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../..')))
 
-from flask import Blueprint, jsonify, request
-from .models import Complaint, StatusEnum, db
-from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+from fastapi import APIRouter, HTTPException, Depends, status, BackgroundTasks, Request
+from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+from pydantic import BaseModel, Field, validator, field_validator, model_validator
+from typing import Optional, List
+import traceback
+import threading
 
 # importing ml pipeline 
 from utils.classifier import classify_user_complaints
-import threading
 
-complaint_bp = Blueprint('complaint', __name__)
+from .models import Complaint, StatusEnum, User
+from .dependencies import get_db
+from .auth import  verify_token
 
-@complaint_bp.route('/', methods=['POST'])
-@jwt_required()
-def createComplaint():
+# Define router
+complaint_router = APIRouter()
+
+# Pydantic models for request validation
+class ComplaintCreate(BaseModel):
+    trainNumber: str
+    pnrNumber: str
+    coachNumber: str
+    seatNumber: str
+    sourceStation: str
+    destinationStation: str
+    complaint: str
+    
+    @field_validator('trainNumber')
+    def validate_train_number(cls, v):
+        if not v.isdigit():
+            raise ValueError("Train number must be numeric")
+        return v.strip()
+    
+    @field_validator('pnrNumber')
+    def validate_pnr_number(cls, v):
+        v = v.strip()
+        if not v.isdigit() or len(v) != 10:
+            raise ValueError("PNR must be a 10-digit number")
+        return v
+    
+    @field_validator('seatNumber')
+    def validate_seat_number(cls, v):
+        if not v.isdigit():
+            raise ValueError("Seat number must be numeric")
+        return v.strip()
+    
+    @field_validator('complaint')
+    def validate_complaint(cls, v):
+        v = v.strip()
+        if len(v) < 20:
+            raise ValueError("Complaint description must be at least 20 characters")
+        return v
+    
+    @model_validator(mode='after')
+    def validate_stations(cls, model):
+        if model.sourceStation.strip() == model.destinationStation.strip():
+            raise ValueError("Source and destination stations cannot be the same")
+        return model
+
+    class Config:
+        anystr_strip_whitespace = True
+
+class ComplaintUpdate(BaseModel):
+    status: Optional[str] = None
+    resolution: Optional[str] = None
+
+# Define valid statuses (using enum values from model)
+VALID_STATUSES = {"pending", "inProgress", "resolved"}
+
+# Background task for classification
+def classify_in_background(user_id: str):
     try:
-        current_user = get_jwt_identity()
-        claims = get_jwt()
+        print(f"Starting background classification for user {user_id}")
+        # Note: If classify_user_complaints is async, you'll need to handle it differently
+        # For now, assuming it can work synchronously or you have a sync version
+        import asyncio
+        asyncio.run(classify_user_complaints(user_id))
+        print(f"Completed background classification for user {user_id}")
+    except Exception as e:
+        print(f"Error in background classification for user {user_id}: {e}")
+        traceback.print_exc()
 
-        data = request.get_json()
-        user_id = current_user
-        trainNumber = str(data.get('trainNumber', '')).strip()
-        pnrNumber = str(data.get('pnrNumber', '')).strip()
-        coachNumber = str(data.get('coachNumber', '')).strip()
-        seatNumber = str(data.get('seatNumber', '')).strip()
-        sourceStation = str(data.get('sourceStation', '')).strip()
-        destinationStation = str(data.get('destinationStation', '')).strip()
-        complaint = str(data.get('complaint', '')).strip()
+@complaint_router.post('/', status_code=201)
+async def create_complaint(
+    request: Request,
+    complaint: ComplaintCreate, 
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    try:
+        token = request.cookies.get("access_token_cookie")
 
-        # Validate all required fields are present
-        if not all([trainNumber, pnrNumber, coachNumber, seatNumber, sourceStation, destinationStation, complaint]):
-            missing_fields = []
-            if not trainNumber: missing_fields.append("trainNumber")
-            if not pnrNumber: missing_fields.append("pnrNumber")
-            if not coachNumber: missing_fields.append("coachNumber")
-            if not seatNumber: missing_fields.append("seatNumber")
-            if not sourceStation: missing_fields.append("sourceStation")
-            if not destinationStation: missing_fields.append("destinationStation")
-            if not complaint: missing_fields.append("complaint")
-            
-            return jsonify({"error": "Missing required fields", "fields": missing_fields}), 400
-
-        # Additional validations
-        if not trainNumber.isdigit():
-            return jsonify({"error": "Train number must be numeric"}), 400
-            
-        if not pnrNumber.isdigit() or len(pnrNumber) != 10:
-            return jsonify({"error": "PNR must be a 10-digit number"}), 400
-            
-        if not seatNumber.isdigit():
-            return jsonify({"error": "Seat number must be numeric"}), 400
-            
-        if sourceStation == destinationStation:
-            return jsonify({"error": "Source and destination stations cannot be the same"}), 400
-            
-        if len(complaint) < 20:
-            return jsonify({"error": "Complaint description must be at least 20 characters"}), 400
+        if not token:
+            raise HTTPException(status_code=401, detail="Missing access token")
         
-        # Create the new complaint
+        token_data, payload  = verify_token(token)
+
+        if not token_data:
+            raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+        current_user = payload
+        
+        # Create new complaint using SQLAlchemy model
         new_complaint = Complaint(
-            user_id=user_id,
-            trainNumber=trainNumber,
-            pnrNumber=pnrNumber,
-            coachNumber=coachNumber,
-            seatNumber=seatNumber,
-            sourceStation=sourceStation,
-            destinationStation=destinationStation,
-            complaint=complaint
+            user_id=current_user.get("sub"),
+            trainNumber=complaint.trainNumber,
+            pnrNumber=complaint.pnrNumber,
+            coachNumber=complaint.coachNumber,
+            seatNumber=complaint.seatNumber,
+            sourceStation=complaint.sourceStation,
+            destinationStation=complaint.destinationStation,
+            complaint=complaint.complaint,
+            status=StatusEnum.pending  # Use enum from model
         )
         
-        # Save to database
-        db.session.add(new_complaint)
-        db.session.commit()
+        # Save complaint using model method
+        new_complaint.save(db)
         
-         # Classify only this user's complaints in a background thread
-        threading.Thread(target=classify_user_complaints, args=(user_id,)).start()
+        # Schedule the classification in the background
+        background_tasks.add_task(classify_in_background, current_user.get("sub"))
 
-        return jsonify(
-            {
-                "message": "Complaint created successfully",
-                "complaint": {
-                    "id": new_complaint.id,
-                    "trainNumber": new_complaint.trainNumber,
-                    "pnrNumber": new_complaint.pnrNumber,
-                    "coachNumber": new_complaint.coachNumber,
-                    "seatNumber": new_complaint.seatNumber,
-                    "sourceStation": new_complaint.sourceStation,
-                    "destinationStation": new_complaint.destinationStation,
-                    "complaint": new_complaint.complaint,
-                    "status": new_complaint.status.value,
-                    "createdAt": new_complaint.created_at.isoformat()
-                }
-            }), 201
+        return {
+            "message": "Complaint created successfully",
+            "complaint": {
+                "id": new_complaint.id,
+                "trainNumber": new_complaint.trainNumber,
+                "pnrNumber": new_complaint.pnrNumber,
+                "coachNumber": new_complaint.coachNumber,
+                "seatNumber": new_complaint.seatNumber,
+                "sourceStation": new_complaint.sourceStation,
+                "destinationStation": new_complaint.destinationStation,
+                "complaint": new_complaint.complaint,
+                "status": new_complaint.status.value,
+                "createdAt": new_complaint.created_at.isoformat()
+            }
+        }
 
     except Exception as e:
-        db.session.rollback()  # Rollback transaction on error
-        return jsonify({"error": str(e)}), 400
+        traceback.print_exc()
+        raise HTTPException(status_code=400, detail=str(e))
 
-
-
-@complaint_bp.route("/get-complaints", methods=["GET"])
-@jwt_required()
-def getComplaints():
+@complaint_router.get("/get-complaints")
+async def get_complaints(
+    request: Request,
+    db: Session = Depends(get_db)
+):
     try:
-        current_user = get_jwt_identity()
+        # Query complaints for current user
+        token = request.cookies.get("access_token_cookie")
+        print(f"Token received: {token}")
+        token_data, payload  = verify_token(token)
+        current_user = token_data
+        print(f"Current user: {current_user}")
+        complaints = db.query(Complaint).filter(
+            Complaint.user_id == current_user.user_id
+        ).order_by(Complaint.created_at.desc()).all()
 
-        # Get all complaints for the current user
-        complaints = Complaint.query.filter_by(user_id=current_user).order_by(Complaint.created_at.desc()).all()
-
-        if not complaints:
-            return jsonify({"success": True, "complaints": []}), 200
-
-        # Serialize the complaints
         complaints_list = [
             {
-                "id": complaint.id,
-                "trainNumber": complaint.trainNumber,
-                "pnrNumber": complaint.pnrNumber,
-                "coachNumber": complaint.coachNumber,
-                "seatNumber": complaint.seatNumber,
-                "sourceStation": complaint.sourceStation,
-                "destinationStation": complaint.destinationStation,
-                "complaint": complaint.complaint,
-                "status": complaint.status.value,
-                "classification": complaint.classification,
-                "sentiment": complaint.sentiment,
-                "sentimentScore": complaint.sentimentScore,
-                "createdAt": complaint.created_at.isoformat()
-            } for complaint in complaints
+                "id": c.id,
+                "trainNumber": c.trainNumber,
+                "pnrNumber": c.pnrNumber,
+                "coachNumber": c.coachNumber,
+                "seatNumber": c.seatNumber,
+                "sourceStation": c.sourceStation,
+                "destinationStation": c.destinationStation,
+                "complaint": c.complaint,
+                "status": c.status.value,
+                "classification": c.classification,
+                "sentiment": c.sentiment,
+                "sentimentScore": c.sentimentScore,
+                "createdAt": c.created_at.isoformat()
+            } for c in complaints
         ]
 
-        return jsonify(
-            {
-                "success": True,
-                "message": "Complaints fetched successfully",
-                "totalComplaints": len(complaints),
-                "complaints": complaints_list
-            }), 200
+        return {
+            "success": True,
+            "message": "Complaints fetched successfully",
+            "totalComplaints": len(complaints),
+            "complaints": complaints_list
+        }
 
     except Exception as e:
-        print(f"[ERROR] Fetching user complaints: {str(e)}")
-        return jsonify({"success": False, "message": "An error occurred while fetching complaints"}), 500
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-@complaint_bp.route("/get-all-complaints", methods=["GET"])
-@jwt_required()
-def getAllComplaints():
+@complaint_router.get("/get-all-complaints")
+async def get_all_complaints(
+    
+    db: Session = Depends(get_db)
+):
     try:
-
-        current_user = get_jwt_identity()
-
-        if get_jwt()["role"] != "admin":
-            return jsonify({"success": False, "message": "Unauthorized access"}), 403
-        
-        complaints = Complaint.query.order_by(Complaint.created_at.desc()).all()
+        # Admin can see all complaints
+        complaints = db.query(Complaint).order_by(Complaint.created_at.desc()).all()
 
         if not complaints:
-            return jsonify({"success": True, "complaints": []}), 200
+            raise HTTPException(status_code=404, detail="No complaints found")
 
-        # Serialize the complaints
         complaints_list = [
             {
-                "id": complaint.id,
-                "trainNumber": complaint.trainNumber,
-                "pnrNumber": complaint.pnrNumber,
-                "coachNumber": complaint.coachNumber,
-                "seatNumber": complaint.seatNumber,
-                "sourceStation": complaint.sourceStation,
-                "destinationStation": complaint.destinationStation,
-                "complaint": complaint.complaint,
-                "status": complaint.status.value,
-                "createdAt": complaint.created_at.isoformat(),
-                "classification": complaint.classification,
-                "sentiment": complaint.sentiment,
-                "sentimentScore": complaint.sentimentScore,
-                "resolution": complaint.resolution
-            } for complaint in complaints
+                "id": c.id,
+                "trainNumber": c.trainNumber,
+                "pnrNumber": c.pnrNumber,
+                "coachNumber": c.coachNumber,
+                "seatNumber": c.seatNumber,
+                "sourceStation": c.sourceStation,
+                "destinationStation": c.destinationStation,
+                "complaint": c.complaint,
+                "status": c.status.value,
+                "createdAt": c.created_at.isoformat(),
+                "classification": c.classification,
+                "sentiment": c.sentiment,
+                "sentimentScore": c.sentimentScore,
+                "resolution": c.resolution,
+            } for c in complaints
         ]
 
-        return jsonify(
-            {
-                "success": True,
-                "message": "Complaints fetched successfully",
-                "totalComplaints": len(complaints),
-                "complaints": complaints_list
-            }), 200
+        return {
+            "success": True,
+            "message": "Complaints fetched successfully",
+            "totalComplaints": len(complaints),
+            "complaints": complaints_list
+        }
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        print(f"[ERROR] Fetching all complaints: {str(e)}")
-        return jsonify({"success": False, "message": "An error occurred while fetching complaints"}), 500
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error fetching complaints {e}")
 
-
-
-@complaint_bp.route("/update/<complaint_id>", methods=["PUT"])
-@jwt_required()
-def updateComplaintStatus(complaint_id):
+@complaint_router.put("/update/{complaint_id}")
+async def update_complaint_status(
+    complaint_id: str, 
+    update_data: ComplaintUpdate,
+    
+    db: Session = Depends(get_db)
+):
     try:
-
-        print("complaint_id", complaint_id)
-        # Get the complaint to update
-        complaint = Complaint.query.get(complaint_id)
-
+        # Find the complaint
+        complaint = db.query(Complaint).filter(Complaint.id == complaint_id).first()
+        
         if not complaint:
-            return jsonify({"error": "Complaint not found"}), 404
+            raise HTTPException(status_code=404, detail="Complaint not found")
+
+        # Validate and update status if provided
+        if update_data.status:
+            if update_data.status not in VALID_STATUSES:
+                raise HTTPException(status_code=400, detail="Invalid status")
+            
+            # Map string status to enum
+            status_mapping = {
+                "pending": StatusEnum.pending,
+                "inProgress": StatusEnum.inProgress,
+                "resolved": StatusEnum.resolved
+            }
+            complaint.status = status_mapping[update_data.status]
         
-        if get_jwt()["role"] != "admin":
-            return jsonify({"success": False, "message": "Unauthorized access"}), 403
+        # Update resolution if provided
+        if update_data.resolution is not None:
+            complaint.resolution = update_data.resolution
+        
+        # Save changes
+        db.commit()
+        db.refresh(complaint)
 
-        # Update the status and resolution
-        data = request.get_json()
-        status = data.get("status")
-        resolution = data.get("resolution")
-        print("resolution", resolution)
-        print("status", status)
-
-        if status:
-            if status not in [status.value for status in StatusEnum]:
-                return jsonify({"error": "Invalid status"}), 400
-            complaint.status = StatusEnum(status)
-
-        if resolution:
-            complaint.resolution = resolution
-
-        db.session.commit()
-
-        return jsonify({
+        return {
             "message": "Complaint updated successfully",
             "complaint": {
                 "id": complaint.id,
@@ -241,8 +283,29 @@ def updateComplaintStatus(complaint_id):
                 "resolution": complaint.resolution,
                 "createdAt": complaint.created_at.isoformat()
             }
-        })
+        }
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 400
+        db.rollback()
+        traceback.print_exc()
+        raise HTTPException(status_code=400, detail=str(e))
+
+# Add a manual endpoint to trigger classification for debugging
+@complaint_router.post("/trigger-classification")
+async def trigger_classification(
+    request: Request,
+):
+    try:
+        token = request.cookies.get("access_token_cookie")
+        token_data, payload = verify_token(token)
+        current_user = token_data
+        # Run classification in a separate thread to avoid blocking
+        thread = threading.Thread(target=classify_in_background, args=(current_user.user_id,))
+        thread.start()
+        
+        return {"message": "Classification triggered successfully"}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))

@@ -15,3 +15,7 @@ hf_xet
 flask-cors
 requests
 torch
+python-jose[cryptography] 
+werkzeug
+python-multipart
+fastapi[standard]

@@ -1,96 +1,66 @@
-from flask import Flask, render_template, session, redirect, jsonify, Blueprint
-from flask_sqlalchemy import SQLAlchemy
-from .models import db, jwt
-from .auth import auth_bp
-from flask_cors import CORS
-from datetime import timedelta
-import os
+# server.py
 from dotenv import load_dotenv
-from .complaint import complaint_bp
-
-app = Flask(__name__)
-
 load_dotenv()
 
-app.config.from_prefixed_env()
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///users.db"
-app.config["SECRET_KEY"] = "eternity"
-app.config["JWT_SECRET_KEY"] = os.environ.get("FLASK_JWT_SECRET_KEY")
 
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=2)
-app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=7)
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import os
+from datetime import timedelta
 
-app.config["JWT_TOKEN_LOCATION"] = ["cookies", "headers"]
-# app.config["JWT_TOKEN_LOCATION"] = ["headers"]
-# app.config["JWT_HEADER_NAME"] = "Authorization"
-# app.config["JWT_HEADER_TYPE"] = "Bearer"
+from .auth import auth_router
+from .complaint import complaint_router
+from .database import Base, engine
+from .models import User, Complaint
 
-app.config["JWT_COOKIE_SECURE"] = True  # True if using HTTPS only
 
-app.config["JWT_ACCESS_COOKIE_NAME"] = "access_token"
-app.config["JWT_REFRESH_COOKIE_NAME"] = "refresh_token"
-app.config["JWT_COOKIE_CSRF_PROTECT"] = False  # Set True in production with CSRF handling
 
-app.config["JWT_ACCESS_COOKIE_PATH"] = "/"  # access token valid for all routes
-app.config["JWT_REFRESH_COOKIE_PATH"] = "/auth/refresh"  # very important
-app.config["JWT_COOKIE_SAMESITE"] = "Lax"
+app = FastAPI()
 
-CORS(
-        app,
-        origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(","),
-        supports_credentials=True,
-        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["Content-Type", "Authorization", "X-Requested-With", "X-CSRF-TOKEN", "x-csrf-token"]
+frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+allowed_origins = [frontend_url]
+    
+    # Add common domains for development
+if os.environ.get("ENVIRONMENT") != "production":
+    allowed_origins.extend([
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://localhost:3000"
+    ])
+
+# CORS config
+app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=[
+            "Content-Type", 
+            "Authorization", 
+            "X-Requested-With", 
+            "X-CSRF-TOKEN", 
+            "x-csrf-token"
+        ],
+        max_age=3600,  # Cache preflight requests
     )
 
-db.init_app(app)
-jwt.init_app(app)
+# Create tables
+Base.metadata.create_all(bind=engine)
 
-with app.app_context():
-    db.create_all()
+# Include routers
+app.include_router(auth_router, prefix="/auth")
+app.include_router(complaint_router, prefix="/complaints")
 
-user_bp = Blueprint('user', __name__, url_prefix='/user')
-app.register_blueprint(auth_bp, url_prefix="/auth")
-
-# complaint_bp = Blueprint('complaint', __name__)
-app.register_blueprint(complaint_bp, url_prefix="/complaints")
-
-@app.route("/status", methods=["GET"])
-def status():  
-    return jsonify({"message": "Success"}), 201
-
-
-@jwt.expired_token_loader
-def expired_token_callback(jwt_header, jwt_data):
-    return jsonify({"message": "Token has expired", "error": "token_expired"}), 401
-
-
-@jwt.invalid_token_loader
-def invalid_token_callback(error):
-    return (
-        jsonify(
-            {"message": "Signature verification failed", "error": "invalid_token"}
-        ),
-        401,
-    )
-
-
-@jwt.unauthorized_loader
-def missing_token_callback(error):
-    return (
-        jsonify(
-            {
-                "message": "Request doesnt contain valid token",
-                "error": error,
-            }
-        ),
-        401,
-    )
+@app.get("/status")
+async def status():
+    return JSONResponse(content={"message": "Success"}, status_code=201)
 
 if __name__ == "__main__":
-    
-    app.run(
+    import uvicorn
+    uvicorn.run(
+        app,
         host=os.getenv("FLASK_HOST", "0.0.0.0"),
         port=int(os.getenv("FLASK_PORT", "8080")),
-        debug=os.getenv("FLASK_DEBUG", "False") == "True"
+        reload=os.getenv("FLASK_DEBUG", "False") == "True"
     )
