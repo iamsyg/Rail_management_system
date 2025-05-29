@@ -19,3 +19,4 @@ python-jose[cryptography]
 werkzeug
 python-multipart
 fastapi[standard]
+pydantic-settings

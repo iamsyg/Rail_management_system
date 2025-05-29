@@ -2,6 +2,8 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine
+from .config import settings
 
 # Get the absolute path of this file
 THIS_FILE = os.path.abspath(__file__)
@@ -25,6 +27,7 @@ DATABASE_PATH = os.path.join(INSTANCE_DIR, "user.db")
 DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+# engine =create_async_engine(url=settings.DATABASE_URL, echo=True)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
