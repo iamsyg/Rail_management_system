@@ -76,7 +76,7 @@ export default function Signup() {
     setIsSubmitting(true);
     
     try {
-      const response = await fetch('http://localhost:8080/auth/signup', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

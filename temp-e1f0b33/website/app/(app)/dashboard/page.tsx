@@ -22,7 +22,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchComplaints = async () => {
       try {
-        const response = await fetch('http://localhost:8080/complaints/get-complaints', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/complaints/get-complaints`, {
           method: 'GET',
           credentials: 'include',
           headers: {

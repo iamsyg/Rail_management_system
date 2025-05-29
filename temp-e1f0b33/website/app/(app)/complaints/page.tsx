@@ -84,7 +84,7 @@ export default function ComplaintPage() {
       setIsSubmitting(true);
       try {
         // Simulate API call
-        const response = await fetch("http://localhost:8080/complaints/", {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/complaints/`, {
           method: "POST",
           credentials: "include",
           headers: {

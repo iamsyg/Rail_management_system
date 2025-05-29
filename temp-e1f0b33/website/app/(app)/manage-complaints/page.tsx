@@ -48,7 +48,7 @@ const ManageComplaints: React.FC = () => {
   useEffect(() => {
     const fetchComplaints = async () => {
       try {
-        const response = await fetch("http://localhost:8080/complaints/get-all-complaints", {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/complaints/get-all-complaints`, {
           method: "GET",
           credentials: "include",
         });
@@ -120,7 +120,7 @@ const ManageComplaints: React.FC = () => {
         payload.resolution = resolutionNotes[id].trim();
       }
   
-      const response = await fetch(`http://localhost:8080/complaints/update/${id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/complaints/update/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

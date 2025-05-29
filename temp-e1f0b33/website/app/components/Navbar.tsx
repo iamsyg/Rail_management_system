@@ -15,7 +15,7 @@ function Navbar({ panelName }: NavbarProps) {
   const logoutHandler = async () => {
     try {
       const res = await toast.promise(
-        fetch("http://localhost:8080/auth/logout", {
+        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/logout`, {
           method: "POST",
           credentials: "include",
         }),
@@ -42,7 +42,7 @@ function Navbar({ panelName }: NavbarProps) {
 
   const checkAdmin = async () => {
     try {
-      const res = await fetch("http://localhost:8080/auth/profile", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/profile`, {
           method: "GET",
           credentials: "include",
         })

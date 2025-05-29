@@ -59,7 +59,7 @@ export default function Signin() {
     setIsSubmitting(true);
     
     try {
-      const response = await fetch('http://localhost:8080/auth/signin', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/signin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
