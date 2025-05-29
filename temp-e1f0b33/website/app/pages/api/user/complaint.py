@@ -103,11 +103,11 @@ async def create_complaint(
         if not token_data:
             raise HTTPException(status_code=401, detail="Invalid or expired token")
 
-        current_user = payload
+        user_id = token_data.user_id
         
         # Create new complaint using SQLAlchemy model
         new_complaint = Complaint(
-            user_id=current_user.get("sub"),
+            user_id=user_id,
             trainNumber=complaint.trainNumber,
             pnrNumber=complaint.pnrNumber,
             coachNumber=complaint.coachNumber,
@@ -122,7 +122,7 @@ async def create_complaint(
         new_complaint.save(db)
         
         # Schedule the classification in the background
-        background_tasks.add_task(classify_in_background, current_user.get("sub"))
+        background_tasks.add_task(classify_in_background, user_id)
 
         return {
             "message": "Complaint created successfully",
@@ -154,10 +154,10 @@ async def get_complaints(
         token = request.cookies.get("access_token_cookie")
         print(f"Token received: {token}")
         token_data, payload  = verify_token(token)
-        current_user = token_data
-        print(f"Current user: {current_user}")
+        user_id = token_data.user_id
+        print(f"Current user: {user_id}")
         complaints = db.query(Complaint).filter(
-            Complaint.user_id == current_user.user_id
+            Complaint.user_id == user_id
         ).order_by(Complaint.created_at.desc()).all()
 
         complaints_list = [
@@ -300,9 +300,9 @@ async def trigger_classification(
     try:
         token = request.cookies.get("access_token_cookie")
         token_data, payload = verify_token(token)
-        current_user = token_data
+        user_id = token_data.user_id
         # Run classification in a separate thread to avoid blocking
-        thread = threading.Thread(target=classify_in_background, args=(current_user.user_id,))
+        thread = threading.Thread(target=classify_in_background, args=(user_id,))
         thread.start()
         
         return {"message": "Classification triggered successfully"}
