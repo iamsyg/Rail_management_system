@@ -138,47 +138,48 @@ Base.metadata.create_all(bind=engine)
 async def root():
     return JSONResponse(content={"message": "Rail Management System API", "status": "running"}, status_code=200)
 
+
 # Status endpoint
 @app.get("/status")
-async def status():
+async def status(): 
     return JSONResponse(content={"message": "Success"}, status_code=200)  # Changed from 201 to 200
 
 # Add OPTIONS handler for preflight requests
-@app.options("/{full_path:path}")
-async def options_handler(full_path: str, request: Request):
+# @app.options("/{full_path:path}")
+# async def options_handler(full_path: str, request: Request):
 
-    origin = request.headers.get("origin")
-    if origin not in allowed_origins:
-        return JSONResponse(status_code=403, content={"error": "CORS origin not allowed"})
+#     origin = request.headers.get("origin")
+#     if origin not in allowed_origins:
+#         return JSONResponse(status_code=403, content={"error": "CORS origin not allowed"})
     
-    return JSONResponse(
-        content={"message": "OK"},
-        status_code=200,
-        headers={
-            "Access-Control-Allow-Origin": origin,
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
-            "Access-Control-Allow-Credentials": "true",
-        }
-    )
+#     return JSONResponse(
+#         content={"message": "OK"},
+#         status_code=200,
+#         headers={
+#             "Access-Control-Allow-Origin": origin,
+#             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+#             "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
+#             "Access-Control-Allow-Credentials": "true",
+#         }
+#     )
 
 # Include routers
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 app.include_router(complaint_router, prefix="/complaints", tags=["Complaints"])
 
 # Add middleware for additional CORS headers (backup)
-@app.middleware("http")
-async def add_cors_header(request, call_next):
-    response = await call_next(request)
-    origin = request.headers.get("origin")
+# @app.middleware("http")
+# async def add_cors_header(request, call_next):
+#     response = await call_next(request)
+#     origin = request.headers.get("origin")
     
-    if origin in allowed_origins:
-        response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+#     if origin in allowed_origins:
+#         response.headers["Access-Control-Allow-Origin"] = origin
+#         response.headers["Access-Control-Allow-Credentials"] = "true"
+#         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+#         response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
     
-    return response
+#     return response
 
 if __name__ == "__main__":
     import uvicorn
